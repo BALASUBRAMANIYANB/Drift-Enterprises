@@ -47,7 +47,7 @@ export default function Home() {
                 <div className="amazon-product-category">{p.category}</div>
                 <div className="amazon-product-title"><Link to={`/products/${p.id}`}>{p.title}</Link></div>
                 <div className="amazon-product-rating">{'★'.repeat(Math.round(p.rating))} <span className="rating-number">{p.rating.toFixed(1)}</span></div>
-                <div className="amazon-product-price"><span className="currency">$</span>{p.price.toFixed(2)}</div>
+                <div className="amazon-product-price"><span className="currency">₹</span>{p.price.toFixed(2)}</div>
                 <Link className="primary-button" to={`/products/${p.id}`}>Add to Cart</Link>
               </div>
             </div>
