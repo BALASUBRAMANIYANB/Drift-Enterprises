@@ -6,6 +6,7 @@ export default function ProductDetail() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const [product, setProduct] = useState(null);
+	const [currentImageIndex, setCurrentImageIndex] = useState(0);
 	const { addItem } = useCart();
 
 	useEffect(() => {
@@ -31,11 +32,34 @@ export default function ProductDetail() {
 		alert("Added to cart!");
 	};
 
+	const images = product.images || [product.image];
+	const currentImage = images[currentImageIndex];
+
+	const nextImage = () => {
+		setCurrentImageIndex((prev) => (prev + 1) % images.length);
+	};
+
+	const prevImage = () => {
+		setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+	};
+
 	return (
 		<div className="page-shell product-detail" style={{ maxWidth: "1200px" }}>
 			<div className="product-detail-layout">
 				<div className="product-detail-image">
-					<img src={product.image} alt={product.title} />
+					{images.length > 1 && (
+						<div style={{ position: 'relative' }}>
+							<button onClick={prevImage} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '10px', cursor: 'pointer' }}><</button>
+							<img src={currentImage} alt={product.title} style={{ width: '100%', height: 'auto' }} />
+							<button onClick={nextImage} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '10px', cursor: 'pointer' }}>></button>
+							<div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '5px' }}>
+								{images.map((_, index) => (
+									<span key={index} onClick={() => setCurrentImageIndex(index)} style={{ width: '10px', height: '10px', borderRadius: '50%', background: index === currentImageIndex ? 'white' : 'rgba(255,255,255,0.5)', cursor: 'pointer' }}></span>
+								))}
+							</div>
+						</div>
+					)}
+					{images.length === 1 && <img src={currentImage} alt={product.title} />}
 				</div>
 				<div className="product-detail-main">
 					<h1>{product.title}</h1>

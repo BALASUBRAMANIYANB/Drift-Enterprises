@@ -60,6 +60,12 @@
     "price": 9350.0,
     "rating": 4.4,
     "image": "/assets/mobiles/poco/Poco M7/-original-imah9wyd5rvchqgv.webp",
+    "images": [
+      "/assets/mobiles/poco/Poco M7/-original-imah9wyd5rvchqgv.webp",
+      "/assets/mobiles/poco/Poco M7/-original-imah9wydbymh7gv2.webp",
+      "/assets/mobiles/poco/Poco M7/-original-imah9wydhw2hf5eu.webp",
+      "/assets/mobiles/poco/Poco M7/-original-imah9wydkx25s2we.webp"
+    ],
     "category": "Mobiles",
     "brand": "Poco"
   }
