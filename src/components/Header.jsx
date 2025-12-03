@@ -24,6 +24,15 @@ export default function Header() {
           <Link to="/cart" className="amazon-header-cart"><span className="cart-count">{totalItems}</span><span className="bold">Cart</span></Link>
         </nav>
       </div>
+      <div className="amazon-header-bottom">
+        <nav className="amazon-categories">
+          <Link to="/products?category=appliances" className="category-link">Appliances</Link>
+          <Link to="/products?category=mobiles" className="category-link">Mobiles</Link>
+          <Link to="/products?category=electronics" className="category-link">Electronics</Link>
+          <Link to="/products?category=tv" className="category-link">TV</Link>
+          <Link to="/products?category=trending" className="category-link">Trending</Link>
+        </nav>
+      </div>
     </header>
   );
 }

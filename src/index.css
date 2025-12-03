@@ -135,8 +135,28 @@ button {
 .amazon-header-bottom {
   margin-top: 0.35rem;
   display: flex;
-  gap: 0.6rem;
+  gap: 1.5rem;
   font-size: 0.85rem;
+  padding: 0.5rem 0;
+}
+
+.amazon-categories {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.category-link {
+  color: #f5f5f5;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.4rem 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.category-link:hover {
+  border-bottom-color: #e50914;
+  color: #e50914;
 }
 
 .amazon-nav-item {
@@ -237,6 +257,15 @@ button {
 
   .amazon-header-bottom {
     overflow-x: auto;
+  }
+
+  .amazon-categories {
+    gap: 1rem;
+    font-size: 0.75rem;
+  }
+
+  .category-link {
+    padding: 0.3rem 0;
   }
 }
 
@@ -880,6 +909,16 @@ button {
 
   .amazon-header-bottom {
     overflow-x: auto;
+  }
+
+  .amazon-categories {
+    gap: 0.75rem;
+    font-size: 0.7rem;
+  }
+
+  .category-link {
+    padding: 0.25rem 0;
+    font-size: 0.75rem;
   }
 
   .amazon-hero-sidebar {
