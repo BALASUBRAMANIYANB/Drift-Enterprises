@@ -9,7 +9,10 @@ export default function Header() {
 	return (
 		<header className="amazon-header">
 			<div className="amazon-header-top">
-				<Link to="/" className="amazon-logo">DRIFT<span> ENTERPRISES</span></Link>
+				<Link to="/" className="amazon-logo">
+					<img src="/assets/logo.png" alt="DRIFT ENTERPRISES Logo" style={{ height: '40px', marginRight: '10px' }} />
+					DRIFT<span> ENTERPRISES</span>
+				</Link>
 				<form className="amazon-search" onSubmit={(e)=>e.preventDefault()}>
 					<select className="amazon-search-category" defaultValue="all">
 						<option value="all">All</option>
@@ -40,6 +43,7 @@ export default function Header() {
 						<div className="category-header">Mobiles</div>
 						<div className={`category-items ${openGroup === 'mobiles' ? 'active' : ''}`}>
 							<Link to="/products?category=mobiles&sub=apple" className="category-link">Apple</Link>
+							<Link to="/products?category=mobiles&sub=poco" className="category-link">Poco</Link>
 							<Link to="/products?category=mobiles&sub=vivo" className="category-link">Vivo</Link>
 							<Link to="/products?category=mobiles&sub=oppo" className="category-link">Oppo</Link>
 							<Link to="/products?category=mobiles&sub=realme" className="category-link">Realme</Link>
