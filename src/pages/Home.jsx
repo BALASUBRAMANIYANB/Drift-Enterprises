@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { products } from "../data/products";
 
 export default function Home() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/api/products")
+      .then((r) => r.json())
+      .then(setProducts)
+      .catch(() => setProducts([]));
+  }, []);
+
   return (
     <div className="amazon-grid-section">
       <div className="amazon-hero">
@@ -46,4 +54,4 @@ export default function Home() {
       </section>
     </div>
   );
-}
+        }
