@@ -67,14 +67,16 @@ export default function ProductDetail() {
 						{'★'.repeat(Math.round(product.rating))} <span className="rating-number">{product.rating.toFixed(1)}</span>
 					</p>
 					<p className="product-detail-price">
-						<span className="currency">$</span>
+						{product.mrp && <span style={{ textDecoration: 'line-through', color: '#888', marginRight: '10px' }}>MRP ₹{product.mrp.toFixed(2)}</span>}
+						<span className="currency">₹</span>
 						{product.price.toFixed(2)}
 					</p>
 					<p className="product-detail-description">{product.description}</p>
 				</div>
 				<aside className="product-detail-buybox">
 					<p className="product-detail-price">
-						<span className="currency">$</span>
+						{product.mrp && <span style={{ textDecoration: 'line-through', color: '#888', marginRight: '10px' }}>MRP ₹{product.mrp.toFixed(2)}</span>}
+						<span className="currency">₹</span>
 						{product.price.toFixed(2)}
 					</p>
 					<p className="text-muted">FREE delivery with DRIFT ENTERPRISES Prime. This is a demo experience.</p>

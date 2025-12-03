@@ -44,7 +44,7 @@ export default function Products() {
 								{'★'.repeat(Math.round(p.rating))} <span className="rating-number">{p.rating?.toFixed?.(1)}</span>
 							</div>
 							<div className="amazon-product-price">
-								<span className="currency">$</span>
+								<span className="currency">{p.category === "Mobiles" ? "₹" : "$"}</span>
 								{Number(p.price).toFixed(2)}
 							</div>
 							<Link className="primary-button" to={`/products/${p.id}`}>
