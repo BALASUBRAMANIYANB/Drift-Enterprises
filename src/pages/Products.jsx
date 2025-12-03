@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 export default function Products() {
 	const [products, setProducts] = useState([]);
+	const [searchParams] = useSearchParams();
 
 	useEffect(() => {
 		fetch("http://localhost:4000/api/products")
@@ -11,12 +12,25 @@ export default function Products() {
 			.catch(() => setProducts([]));
 	}, []);
 
+	const category = searchParams.get('category');
+	const sub = searchParams.get('sub');
+
+	let filteredProducts = products;
+	if (category) {
+		filteredProducts = filteredProducts.filter(p => p.category.toLowerCase() === category.toLowerCase());
+	}
+	if (sub) {
+		filteredProducts = filteredProducts.filter(p => p.brand && p.brand.toLowerCase() === sub.toLowerCase());
+	}
+
+	const title = category ? (sub ? `${sub.charAt(0).toUpperCase() + sub.slice(1)} ${category}` : category) : "All Products";
+
 	return (
 		<div className="amazon-grid-section">
-			<h1 style={{ padding: "0 0.5rem" }}>All Products</h1>
+			<h1 style={{ padding: "0 0.5rem" }}>{title}</h1>
 			<div style={{ height: "1rem" }}></div>
 			<div className="amazon-product-grid">
-				{products.map((p) => (
+				{filteredProducts.map((p) => (
 					<div key={p.id} className="amazon-product-card">
 						<div className="amazon-product-image-wrapper">
 							<img src={p.image} alt={p.title} />
