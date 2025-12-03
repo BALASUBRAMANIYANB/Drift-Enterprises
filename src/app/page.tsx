@@ -1,66 +1,84 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import Link from "next/link";
+import { products } from "./data/products";
+import { useCart } from "./components/CartProvider";
+
+const heroCategories = [
+  "Electronics",
+  "Fashion & Accessories",
+  "Home & Kitchen",
+  "Books & Audible",
+  "Beauty & Personal Care",
+  "Toys & Games",
+];
 
 export default function Home() {
+  const { addItem } = useCart();
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      <section className="amazon-hero">
+        <div className="amazon-hero-banner">
+          <div className="amazon-hero-text">
+            <h1>Shop the best of DRIFT ENTERPRISES</h1>
+            <p>
+              Fast delivery, curated products, and an Amazon-inspired shopping
+              experience.
+            </p>
+            <Link href="#featured" className="amazon-hero-button">
+              Shop featured deals
+            </Link>
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <aside className="amazon-hero-sidebar">
+          <h2>Top categories</h2>
+          <ul>
+            {heroCategories.map((category) => (
+              <li key={category}>
+                <button className="amazon-link-button">{category}</button>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </section>
+
+      <section id="featured" className="amazon-grid-section">
+        <header className="amazon-section-header">
+          <h2>Featured products</h2>
+          <Link href="/products" className="amazon-link">
+            View all products
+          </Link>
+        </header>
+        <div className="amazon-product-grid">
+          {products.slice(0, 4).map((product) => (
+            <article key={product.id} className="amazon-product-card">
+              <div className="amazon-product-image-wrapper">
+                <img src={product.image} alt={product.title} />
+              </div>
+              <div className="amazon-product-info">
+                <p className="amazon-product-category">{product.category}</p>
+                <h3 className="amazon-product-title">
+                  <Link href={`/products/${product.id}`}>{product.title}</Link>
+                </h3>
+                <p className="amazon-product-rating">
+                  {"★".repeat(Math.round(product.rating))}
+                  <span className="rating-number">{product.rating.toFixed(1)}</span>
+                </p>
+                <p className="amazon-product-price">
+                  <span className="currency">$</span>
+                  {product.price.toFixed(2)}
+                </p>
+                <button
+                  className="amazon-add-to-cart"
+                  onClick={() => addItem(product)}
+                >
+                  Add to Cart
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
-      </main>
+      </section>
     </div>
   );
 }

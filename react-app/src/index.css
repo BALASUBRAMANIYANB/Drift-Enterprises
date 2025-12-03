@@ -1,0 +1,48 @@
+/* basic reset and global styles (adapted from the Next app) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #050505;
+  color: #f5f5f5;
+}
+
+.amazon-main {
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page-shell { background: #fff; color: #111; padding: 1rem; width: 100%; }
+
+/* minimal product card grid */
+.amazon-grid-section { width: 100%; max-width: 1200px; margin: 0 auto; }
+.amazon-product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.amazon-product-card { background-color: #111; border-radius: 4px; padding: 0.75rem; color: #fff; }
+
+a { color: inherit; text-decoration: none; }
+
+/* header */
+.amazon-header { background: #000; padding: 0.5rem 1rem; color: #fff; width: 100%; }
+.amazon-header-top { display:flex; align-items:center; gap:1rem; max-width:1200px; margin:0 auto; }
+.amazon-logo { font-size:1.5rem; font-weight:700; color:#e50914; }
+.amazon-search { flex:1; display:flex; }
+.amazon-search-input { flex:1; padding:0.5rem; }
+
+/* small helpers */
+.primary-button { background:#e50914; color: #fff; padding: 0.5rem 0.9rem; border-radius:999px; }
+
+@media (max-width: 768px) {
+  .amazon-header-top { padding: 0 0.5rem; }
+}
