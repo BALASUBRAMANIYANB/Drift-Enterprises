@@ -25,6 +25,7 @@ export default function Home() {
           <h2>Top categories</h2>
           <ul>
             <li>Electronics</li>
+            <li>Mobiles</li>
             <li>Fashion & Accessories</li>
             <li>Home & Kitchen</li>
             <li>Books & Audible</li>
@@ -46,6 +47,27 @@ export default function Home() {
                 <div className="amazon-product-title"><Link to={`/products/${p.id}`}>{p.title}</Link></div>
                 <div className="amazon-product-rating">{'★'.repeat(Math.round(p.rating))} <span className="rating-number">{p.rating.toFixed(1)}</span></div>
                 <div className="amazon-product-price"><span className="currency">$</span>{p.price.toFixed(2)}</div>
+                <Link className="primary-button" to={`/products/${p.id}`}>Add to Cart</Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ marginTop: "1.5rem" }}>
+        <h2 style={{ marginBottom: ".75rem" }}>Mobiles</h2>
+        <h3 style={{ marginBottom: ".5rem" }}>Poco</h3>
+        <div className="amazon-product-grid">
+          {products.filter(p => p.category === "Mobiles" && p.brand === "Poco").map((p) => (
+            <div key={p.id} className="amazon-product-card">
+              <div className="amazon-product-image-wrapper">
+                <img src={p.image} alt={p.title} />
+              </div>
+              <div className="amazon-product-info">
+                <div className="amazon-product-category">{p.category}</div>
+                <div className="amazon-product-title"><Link to={`/products/${p.id}`}>{p.title}</Link></div>
+                <div className="amazon-product-rating">{'★'.repeat(Math.round(p.rating))} <span className="rating-number">{p.rating.toFixed(1)}</span></div>
+                <div className="amazon-product-price"><span className="currency">₹</span>{p.price.toFixed(2)}</div>
                 <Link className="primary-button" to={`/products/${p.id}`}>Add to Cart</Link>
               </div>
             </div>

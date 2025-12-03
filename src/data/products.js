@@ -59,7 +59,8 @@ export const products = [
     description: "6 GB RAM, 128 GB storage (expandable up to 1 TB) with a 17.48 cm (6.88 inch) HD+ display, 50MP rear camera, 8MP front camera, 5160 mAh battery, and 4 Gen 2 5G processor.",
     price: 9350.0,
     rating: 4.4,
-    image: "/assets/mobiles/poco/poco-m7-5g.jpg",
+    image: "/assets/mobiles/poco/Poco M7/-original-imah9wyd5rvchqgv.webp",
     category: "Mobiles",
+    brand: "Poco",
   },
 ];
