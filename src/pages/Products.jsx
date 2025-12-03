@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { products as localProducts } from "../data/products.js";
 
 export default function Products() {
-	const [products, setProducts] = useState([]);
+	const [products, setProducts] = useState(localProducts);
 	const [searchParams] = useSearchParams();
 
 	useEffect(() => {
 		fetch("http://localhost:4000/api/products")
 			.then((r) => r.json())
 			.then(setProducts)
-			.catch(() => setProducts([]));
+			.catch(() => setProducts(localProducts));
 	}, []);
 
 	const category = searchParams.get('category');

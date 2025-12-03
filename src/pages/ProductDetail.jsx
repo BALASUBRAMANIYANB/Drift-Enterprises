@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCart } from "../components/CartProvider";
+import { products as localProducts } from "../data/products.js";
 
 export default function ProductDetail() {
 	const { id } = useParams();
@@ -13,7 +14,10 @@ export default function ProductDetail() {
 		fetch(`http://localhost:4000/api/products/${id}`)
 			.then((r) => r.json())
 			.then(setProduct)
-			.catch(() => setProduct(null));
+			.catch(() => {
+				const localProduct = localProducts.find((p) => p.id === id);
+				setProduct(localProduct || null);
+			});
 	}, [id]);
 
 	if (!product)

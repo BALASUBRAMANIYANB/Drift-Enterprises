@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { products as localProducts } from "../data/products.js";
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(localProducts);
 
   useEffect(() => {
     fetch("http://localhost:4000/api/products")
       .then((r) => r.json())
       .then(setProducts)
-      .catch(() => setProducts([]));
+      .catch(() => setProducts(localProducts));
   }, []);
 
   return (
