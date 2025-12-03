@@ -145,6 +145,10 @@ button {
   gap: 1.5rem;
 }
 
+.category-dropdown {
+  position: relative;
+}
+
 .category-link {
   color: #f5f5f5;
   text-decoration: none;
@@ -152,11 +156,48 @@ button {
   padding: 0.4rem 0;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
+  display: block;
 }
 
 .category-link:hover {
   border-bottom-color: #e50914;
   color: #e50914;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  min-width: 150px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.dropdown-menu.active {
+  max-height: 500px;
+  opacity: 1;
+  padding: 0.5rem 0;
+}
+
+.dropdown-item {
+  display: block;
+  color: #f5f5f5;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.dropdown-item:hover {
+  background-color: #222;
+  color: #e50914;
+  padding-left: 1.25rem;
 }
 
 .amazon-nav-item {
@@ -266,6 +307,19 @@ button {
 
   .category-link {
     padding: 0.3rem 0;
+  }
+
+  .dropdown-menu {
+    min-width: 120px;
+  }
+
+  .dropdown-item {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .dropdown-item:hover {
+    padding-left: 1rem;
   }
 }
 
@@ -919,6 +973,19 @@ button {
   .category-link {
     padding: 0.25rem 0;
     font-size: 0.75rem;
+  }
+
+  .dropdown-menu {
+    min-width: 110px;
+  }
+
+  .dropdown-item {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  .dropdown-item:hover {
+    padding-left: 0.8rem;
   }
 
   .amazon-hero-sidebar {

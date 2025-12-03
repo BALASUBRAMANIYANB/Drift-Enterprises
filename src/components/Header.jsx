@@ -1,9 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "./CartProvider";
 
 export default function Header() {
   const { totalItems } = useCart();
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  const categories = {
+    appliances: [
+      { name: "Refrigerator", link: "/products?category=appliances&sub=refrigerator" },
+      { name: "Air Conditioner", link: "/products?category=appliances&sub=air-conditioner" }
+    ],
+    mobiles: [
+      { name: "Apple", link: "/products?category=mobiles&sub=apple" },
+      { name: "Vivo", link: "/products?category=mobiles&sub=vivo" },
+      { name: "Oppo", link: "/products?category=mobiles&sub=oppo" },
+      { name: "Realme", link: "/products?category=mobiles&sub=realme" },
+      { name: "OnePlus", link: "/products?category=mobiles&sub=oneplus" },
+      { name: "Motorola", link: "/products?category=mobiles&sub=motorola" },
+      { name: "Poco", link: "/products?category=mobiles&sub=poco" }
+    ],
+    electronics: [
+      { name: "Home Theater", link: "/products?category=electronics&sub=home-theater" },
+      { name: "Sound Bar", link: "/products?category=electronics&sub=sound-bar" }
+    ],
+    tv: [
+      { name: "Toshiba", link: "/products?category=tv&sub=toshiba" },
+      { name: "Mi", link: "/products?category=tv&sub=mi" },
+      { name: "Realme", link: "/products?category=tv&sub=realme" },
+      { name: "Samsung", link: "/products?category=tv&sub=samsung" },
+      { name: "LG", link: "/products?category=tv&sub=lg" },
+      { name: "Assembled TV", link: "/products?category=tv&sub=assembled-tv" },
+      { name: "TCL", link: "/products?category=tv&sub=tcl" }
+    ],
+    trending: []
+  };
+
   return (
     <header className="amazon-header">
       <div className="amazon-header-top">
@@ -26,11 +58,20 @@ export default function Header() {
       </div>
       <div className="amazon-header-bottom">
         <nav className="amazon-categories">
-          <Link to="/products?category=appliances" className="category-link">Appliances</Link>
-          <Link to="/products?category=mobiles" className="category-link">Mobiles</Link>
-          <Link to="/products?category=electronics" className="category-link">Electronics</Link>
-          <Link to="/products?category=tv" className="category-link">TV</Link>
-          <Link to="/products?category=trending" className="category-link">Trending</Link>
+          {Object.entries(categories).map(([key, subcats]) => (
+            <div key={key} className="category-dropdown" onMouseEnter={() => setOpenDropdown(key)} onMouseLeave={() => setOpenDropdown(null)}>
+              <Link to={`/products?category=${key}`} className="category-link">
+                {key.charAt(0).toUpperCase() + key.slice(1)}
+              </Link>
+              {subcats.length > 0 && (
+                <div className={`dropdown-menu ${openDropdown === key ? 'active' : ''}`}>
+                  {subcats.map((subcat, idx) => (
+                    <Link key={idx} to={subcat.link} className="dropdown-item">{subcat.name}</Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </nav>
       </div>
     </header>
