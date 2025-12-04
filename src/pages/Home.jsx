@@ -2,8 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { products as localProducts } from "../data/products.js";
 
+const banners = [
+  "/assets/home/Banner1.jpg",
+  "/assets/home/Banner2.jpg",
+  "/assets/home/Banner3.jpg"
+];
+
 export default function Home() {
   const [products, setProducts] = useState(localProducts);
+  const [currentBanner, setCurrentBanner] = useState(0);
 
   useEffect(() => {
     fetch("http://localhost:4000/api/products")
@@ -12,27 +19,28 @@ export default function Home() {
       .catch(() => setProducts(localProducts));
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % banners.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="amazon-grid-section">
       <div className="amazon-hero">
-        <div className="amazon-hero-banner page-shell">
+        <div className="amazon-hero-banner">
           <div className="amazon-hero-text">
             <h1>Shop the best of DRIFT ENTERPRISES</h1>
             <p>Fast delivery, curated products, and an Amazon-inspired shopping experience.</p>
             <Link to="/products" className="amazon-hero-button">Shop featured deals</Link>
           </div>
         </div>
-        <aside className="amazon-hero-sidebar">
-          <h2>Top categories</h2>
-          <ul>
-            <li>Electronics</li>
-            <li>Mobiles</li>
-            <li>Fashion & Accessories</li>
-            <li>Home & Kitchen</li>
-            <li>Books & Audible</li>
-            <li>Beauty & Personal Care</li>
-          </ul>
-        </aside>
+      </div>
+
+      <div className="full-screen-slideshow">
+        <img src={banners[currentBanner]} alt="Slideshow" />
+        <img src={banners[(currentBanner + 1) % banners.length]} alt="Slideshow" />
       </div>
 
       <section style={{ marginTop: "1.5rem" }}>

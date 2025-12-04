@@ -60,12 +60,12 @@ export const products = [
     price: 9350.0,
     mrp: 12999.0,
     rating: 4.4,
-    image: "/assets/mobiles/poco/Poco M7/-original-imah9wyd5rvchqgv.webp",
+    image: "https://drive.google.com/drive/folders/1qE_6o9DXBTzCw3qOioJ9Cm3insxQL4Gd?usp=drive_link",
     images: [
-      "/assets/mobiles/poco/Poco M7/-original-imah9wyd5rvchqgv.webp",
-      "/assets/mobiles/poco/Poco M7/-original-imah9wydbymh7gv2.webp",
-      "/assets/mobiles/poco/Poco M7/-original-imah9wydhw2hf5eu.webp",
-      "/assets/mobiles/poco/Poco M7/-original-imah9wydkx25s2we.webp"
+      "https://drive.google.com/file/d/1aZ7IFZ3V0_vyBtJPukfsb37fZdSRx2AF/view?usp=sharing",
+      "https://drive.google.com/file/d/19n6eqahbZL0ZK6DD-KbqXbeXKEu1WOYs/view?usp=drive_link",
+      "https://drive.google.com/file/d/1Ax9qHu757aO_12ApL6TJOVKuhcpSS3_c/view?usp=drive_link",
+      "https://drive.google.com/file/d/1tpEsF6-H2S19846oZl3c2LEunWY6RIvn/view?usp=drive_link"
     ],
     category: "Mobiles",
     brand: "Poco",

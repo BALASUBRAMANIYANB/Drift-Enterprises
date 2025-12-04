@@ -424,7 +424,7 @@ footer {
 /* Hero Section */
 .amazon-hero {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -440,8 +440,7 @@ footer {
   border-radius: 4px;
   padding: 2rem;
   min-height: 200px;
-  display: flex;
-  align-items: flex-end;
+  position: relative;
   color: #fff;
 }
 
@@ -457,6 +456,14 @@ footer {
     padding: 1rem;
     min-height: 140px;
   }
+}
+
+.amazon-hero-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
 }
 
 .amazon-hero-text h1 {
@@ -1084,4 +1091,40 @@ footer {
 .empty-state p {
   margin-bottom: 1rem;
   font-size: 1rem;
+}
+
+/* Sidebar Banner */
+.sidebar-banner {
+  margin-top: 1rem;
+}
+
+.sidebar-banner img {
+  width: 100%;
+  border-radius: 4px;
+  animation: fadeIn 2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Full Screen Slideshow */
+.full-screen-slideshow {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.full-screen-slideshow img {
+  width: 48%;
+  max-width: 500px;
+  height: auto;
+  display: block;
+  transition: opacity 1s ease-in-out;
 }
