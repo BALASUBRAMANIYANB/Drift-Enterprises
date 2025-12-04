@@ -31,20 +31,20 @@ export default function Home() {
       <div className="amazon-hero">
         <div className="amazon-hero-banner">
           <div className="amazon-hero-text">
-            <h1>Shop the best of DRIFT ENTERPRISES</h1>
-            <p>Fast delivery, curated products, and an Amazon-inspired shopping experience.</p>
-            <Link to="/products" className="amazon-hero-button">Shop featured deals</Link>
+            <h1>Discover Premium Electronics at DRIFT ENTERPRISES</h1>
+            <p>Fast delivery, curated products, and unbeatable deals on the latest tech.</p>
+            <Link to="/products" className="amazon-hero-button">🛍️ Shop Now</Link>
           </div>
         </div>
       </div>
 
       <div className="full-screen-slideshow">
-        <img src={banners[currentBanner]} alt="Slideshow" />
-        <img src={banners[(currentBanner + 1) % banners.length]} alt="Slideshow" />
+        <img src={banners[currentBanner]} alt="Featured Banner" />
+        <img src={banners[(currentBanner + 1) % banners.length]} alt="Promotional Banner" />
       </div>
 
-      <section style={{ marginTop: "1.5rem" }}>
-        <h2 style={{ marginBottom: ".75rem" }}>Featured products</h2>
+      <section style={{ marginTop: "3rem", marginBottom: "3rem" }}>
+        <h2 style={{ marginBottom: "1.5rem", fontSize: "2rem", fontWeight: "900", color: "#1a1a1a", letterSpacing: "-0.5px" }}>✨ Featured Products</h2>
         <div className="amazon-product-grid">
           {products.slice(0, 6).map((p) => (
             <div key={p.id} className="amazon-product-card">
@@ -56,16 +56,16 @@ export default function Home() {
                 <div className="amazon-product-title"><Link to={`/products/${p.id}`}>{p.title}</Link></div>
                 <div className="amazon-product-rating">{'★'.repeat(Math.round(p.rating))} <span className="rating-number">{p.rating.toFixed(1)}</span></div>
                 <div className="amazon-product-price"><span className="currency">₹</span>{p.price.toFixed(2)}</div>
-                <Link className="primary-button" to={`/products/${p.id}`}>Add to Cart</Link>
+                <Link className="primary-button" to={`/products/${p.id}`}>View Details</Link>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section style={{ marginTop: "1.5rem" }}>
-        <h2 style={{ marginBottom: ".75rem" }}>Mobiles</h2>
-        <h3 style={{ marginBottom: ".5rem" }}>Poco</h3>
+      <section style={{ marginTop: "3rem", marginBottom: "3rem" }}>
+        <h2 style={{ marginBottom: "1rem", fontSize: "2rem", fontWeight: "900", color: "#1a1a1a", letterSpacing: "-0.5px" }}>📱 Trending Mobiles</h2>
+        <h3 style={{ marginBottom: "1.5rem", fontSize: "1.2rem", fontWeight: "600", color: "#666" }}>Poco Series</h3>
         <div className="amazon-product-grid">
           {products.filter(p => p.category === "Mobiles" && p.brand === "Poco").map((p) => (
             <div key={p.id} className="amazon-product-card">
@@ -77,7 +77,7 @@ export default function Home() {
                 <div className="amazon-product-title"><Link to={`/products/${p.id}`}>{p.title}</Link></div>
                 <div className="amazon-product-rating">{'★'.repeat(Math.round(p.rating))} <span className="rating-number">{p.rating.toFixed(1)}</span></div>
                 <div className="amazon-product-price"><span className="currency">₹</span>{p.price.toFixed(2)}</div>
-                <Link className="primary-button" to={`/products/${p.id}`}>Add to Cart</Link>
+                <Link className="primary-button" to={`/products/${p.id}`}>View Details</Link>
               </div>
             </div>
           ))}
