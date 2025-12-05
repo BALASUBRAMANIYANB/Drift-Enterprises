@@ -33,7 +33,12 @@ export default function ProductDetail() {
 
 	const handleAddToCart = () => {
 		addItem(product);
-		alert("Added to cart!");
+		alert("✓ Added to cart successfully!");
+	};
+
+	const handleBuyNow = () => {
+		addItem(product);
+		navigate("/checkout");
 	};
 
 	const images = product.images || [product.image];
@@ -85,10 +90,10 @@ export default function ProductDetail() {
 					</p>
 					<p className="text-muted">FREE delivery with DRIFT ENTERPRISES Prime. This is a demo experience.</p>
 					<button className="primary-button wide" onClick={handleAddToCart} style={{ width: "100%" }}>
-						Add to Cart
+						🛒 Add to Cart
 					</button>
-					<button className="primary-button wide" style={{ marginTop: ".5rem", width: "100%" }}>
-						Buy now
+					<button className="primary-button wide" onClick={handleBuyNow} style={{ marginTop: ".75rem", width: "100%", background: "linear-gradient(135deg, #1a1a1a 0%, #000000 100%)" }}>
+						⚡ Buy Now
 					</button>
 				</aside>
 			</div>

@@ -1,33 +1,74 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartProvider";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Header() {
 	const { totalItems } = useCart();
+	const { user, isAuthenticated, logout, isAdmin } = useAuth();
 	const [openGroup, setOpenGroup] = useState(null);
+	const navigate = useNavigate();
+
+	const handleLogout = () => {
+		logout();
+		navigate("/");
+	};
 
 	return (
 		<header className="amazon-header">
 			<div className="amazon-header-top">
 				<Link to="/" className="amazon-logo">
-					<img src="/assets/logo.png" alt="DRIFT ENTERPRISES Logo" style={{ height: '40px', marginRight: '10px' }} />
+					<img src="/assets/logo.png" alt="DRIFT ENTERPRISES Logo" style={{ height: '45px' }} />
 					DRIFT<span> ENTERPRISES</span>
 				</Link>
 				<form className="amazon-search" onSubmit={(e)=>e.preventDefault()}>
 					<select className="amazon-search-category" defaultValue="all">
 						<option value="all">All</option>
 						<option value="electronics">Electronics</option>
-						<option value="fashion">Fashion</option>
-						<option value="home">Home</option>
+						<option value="mobiles">Mobiles</option>
+						<option value="appliances">Appliances</option>
+						<option value="tv">TV</option>
 					</select>
-					<input className="amazon-search-input" placeholder="Search DRIFT ENTERPRISES for products" />
-					<button type="submit" className="amazon-search-button">Search</button>
+					<input className="amazon-search-input" placeholder="Search for products, brands and more..." />
+					<button type="submit" className="amazon-search-button">🔍 Search</button>
 				</form>
 				<nav className="amazon-header-links">
-					<Link to="/admin/products" className="amazon-header-link"><span className="small">Manage</span><span className="bold">Products</span></Link>
-					<Link to="/account" className="amazon-header-link"><span className="small">Hello, Sign in</span><span className="bold">Account &amp; Lists</span></Link>
+					{isAdmin() && (
+						<Link to="/admin/products" className="amazon-header-link">
+							<span className="small">Manage</span>
+							<span className="bold">Products</span>
+						</Link>
+					)}
+					{isAuthenticated() ? (
+						<>
+							<Link to="/account" className="amazon-header-link">
+								<span className="small">Hello, {user?.username}</span>
+								<span className="bold">Account &amp; Lists</span>
+							</Link>
+							<button 
+								onClick={handleLogout} 
+								className="amazon-header-link" 
+								style={{ 
+									background: "none", 
+									border: "none", 
+									cursor: "pointer",
+									color: "inherit",
+									font: "inherit",
+									padding: "0.5rem 1rem"
+								}}
+							>
+								<span className="small">Sign Out</span>
+								<span className="bold">🚪 Logout</span>
+							</button>
+						</>
+					) : (
+						<Link to="/login" className="amazon-header-link">
+							<span className="small">Hello, Sign in</span>
+							<span className="bold">Account &amp; Lists</span>
+						</Link>
+					)}
 					<Link to="/orders" className="amazon-header-link"><span className="small">Returns</span><span className="bold">&amp; Orders</span></Link>
-					<Link to="/cart" className="amazon-header-cart"><span className="cart-count">{totalItems}</span><span className="bold">Cart</span></Link>
+					<Link to="/cart" className="amazon-header-cart"><span className="cart-count">{totalItems}</span><span className="bold">🛒 Cart</span></Link>
 				</nav>
 			</div>
 			<div className="amazon-header-bottom">

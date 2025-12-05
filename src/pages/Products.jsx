@@ -24,12 +24,23 @@ export default function Products() {
 		filteredProducts = filteredProducts.filter(p => p.brand && p.brand.toLowerCase() === sub.toLowerCase());
 	}
 
-	const title = category ? (sub ? `${sub.charAt(0).toUpperCase() + sub.slice(1)} ${category}` : category) : "All Products";
+	const formatTitle = (str) => str.charAt(0).toUpperCase() + str.slice(1).replace(/-/g, ' ');
+	const title = category ? (sub ? `${formatTitle(sub)} - ${formatTitle(category)}` : formatTitle(category)) : "All Products";
 
 	return (
 		<div className="amazon-grid-section">
-			<h1 style={{ padding: "0 0.5rem" }}>{title}</h1>
-			<div style={{ height: "1rem" }}></div>
+			<h1 style={{ padding: "0 0.5rem", fontSize: "2.5rem", fontWeight: "900", color: "#1a1a1a", letterSpacing: "-1px", marginBottom: "2rem" }}>
+				{title}
+			</h1>
+			{filteredProducts.length === 0 ? (
+				<div className="empty-state">
+					<p style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>No products found</p>
+					<p style={{ fontSize: "1rem", color: "#666", marginBottom: "2rem" }}>Try browsing other categories</p>
+					<Link to="/products" className="primary-button" style={{ display: "inline-block", padding: "1rem 2rem" }}>
+						View All Products
+					</Link>
+				</div>
+			) : (
 			<div className="amazon-product-grid">
 				{filteredProducts.map((p) => (
 					<div key={p.id} className="amazon-product-card">
@@ -55,6 +66,7 @@ export default function Products() {
 					</div>
 				))}
 			</div>
+			)}
 		</div>
 	);
 }
