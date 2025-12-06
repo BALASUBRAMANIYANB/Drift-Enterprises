@@ -2,23 +2,46 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCart } from "../components/CartProvider";
 import { products as localProducts } from "../data/products.js";
+import { productService } from "../services/productService";
 
 export default function ProductDetail() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const [product, setProduct] = useState(null);
+	const [loading, setLoading] = useState(true);
 	const [currentImageIndex, setCurrentImageIndex] = useState(0);
 	const { addItem } = useCart();
 
 	useEffect(() => {
-		fetch(`http://localhost:4000/api/products/${id}`)
-			.then((r) => r.json())
-			.then(setProduct)
-			.catch(() => {
+		const loadProduct = async () => {
+			try {
+				const firebaseProduct = await productService.getProductById(id);
+				// Transform Firebase product to match expected format
+				const transformedProduct = {
+					...firebaseProduct,
+					image: firebaseProduct.images?.[0] || 'https://via.placeholder.com/400'
+				};
+				setProduct(transformedProduct);
+			} catch (error) {
+				console.error("Error loading product:", error);
+				// Fallback to local products
 				const localProduct = localProducts.find((p) => p.id === id);
 				setProduct(localProduct || null);
-			});
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		loadProduct();
 	}, [id]);
+
+	if (loading) {
+		return (
+			<div className="page-shell" style={{ maxWidth: "1200px", textAlign: "center", padding: "4rem 2rem" }}>
+				<p style={{ fontSize: '2rem', color: '#e71d36', fontWeight: '700' }}>⏳ Loading product...</p>
+			</div>
+		);
+	}
 
 	if (!product)
 		return (

@@ -1,16 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { products as localProducts } from "../data/products.js";
+import { productService } from "../services/productService";
 
 export default function Products() {
-	const [products, setProducts] = useState(localProducts);
+	const [products, setProducts] = useState([]);
+	const [loading, setLoading] = useState(true);
 	const [searchParams] = useSearchParams();
 
 	useEffect(() => {
-		fetch("http://localhost:4000/api/products")
-			.then((r) => r.json())
-			.then(setProducts)
-			.catch(() => setProducts(localProducts));
+		const loadProducts = async () => {
+			try {
+				const firebaseProducts = await productService.getAllProducts();
+				// Transform Firebase products to match the expected format
+				const transformedProducts = firebaseProducts.map(p => ({
+					...p,
+					image: p.images?.[0] || 'https://via.placeholder.com/300'
+				}));
+				setProducts(transformedProducts.length > 0 ? transformedProducts : localProducts);
+			} catch (error) {
+				console.error("Error loading products:", error);
+				setProducts(localProducts);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		loadProducts();
 	}, []);
 
 	const category = searchParams.get('category');
@@ -21,11 +37,24 @@ export default function Products() {
 		filteredProducts = filteredProducts.filter(p => p.category.toLowerCase() === category.toLowerCase());
 	}
 	if (sub) {
-		filteredProducts = filteredProducts.filter(p => p.brand && p.brand.toLowerCase() === sub.toLowerCase());
+		filteredProducts = filteredProducts.filter(p => 
+			(p.subcategory && p.subcategory.toLowerCase() === sub.toLowerCase()) ||
+			(p.brand && p.brand.toLowerCase() === sub.toLowerCase())
+		);
 	}
 
 	const formatTitle = (str) => str.charAt(0).toUpperCase() + str.slice(1).replace(/-/g, ' ');
 	const title = category ? (sub ? `${formatTitle(sub)} - ${formatTitle(category)}` : formatTitle(category)) : "All Products";
+
+	if (loading) {
+		return (
+			<div className="amazon-grid-section">
+				<div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+					<p style={{ fontSize: '2rem', color: '#e71d36', fontWeight: '700' }}>⏳ Loading products...</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="amazon-grid-section">

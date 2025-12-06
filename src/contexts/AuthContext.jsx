@@ -1,82 +1,107 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  createUserWithEmailAndPassword 
+} from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 
 const AuthContext = createContext();
 
-const AUTH_KEY = "drift_enterprises_auth";
-
-// Mock users database (in production, this would be on the backend)
-const MOCK_USERS = {
-  admin: {
-    username: "admin",
-    password: "admin123", // In production, this would be hashed
-    role: "admin",
-    email: "admin@drift.com",
-    fullName: "Admin User"
-  },
-  user: {
-    username: "user",
-    password: "user123",
-    role: "customer",
-    email: "user@drift.com",
-    fullName: "Regular User"
-  }
-};
-
-function loadAuthFromStorage() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(AUTH_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => loadAuthFromStorage());
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (user) {
-      window.localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-    } else {
-      window.localStorage.removeItem(AUTH_KEY);
-    }
-  }, [user]);
-
-  const login = (username, password) => {
-    setLoading(true);
-    
-    // Simulate API call delay
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const mockUser = MOCK_USERS[username];
-        
-        if (!mockUser || mockUser.password !== password) {
-          setLoading(false);
-          reject(new Error("Invalid username or password"));
-          return;
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch user role from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              username: userData.username || firebaseUser.email.split('@')[0],
+              fullName: userData.fullName || firebaseUser.displayName || "User",
+              role: userData.role || "customer",
+              loginTime: new Date().toISOString()
+            });
+          } else {
+            // If user document doesn't exist, create one with default role
+            const defaultUserData = {
+              email: firebaseUser.email,
+              username: firebaseUser.email.split('@')[0],
+              fullName: firebaseUser.displayName || "User",
+              role: "customer",
+              createdAt: new Date().toISOString()
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), defaultUserData);
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              username: defaultUserData.username,
+              fullName: defaultUserData.fullName,
+              role: defaultUserData.role,
+              loginTime: new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setUser(null);
         }
-
-        const authUser = {
-          username: mockUser.username,
-          role: mockUser.role,
-          email: mockUser.email,
-          fullName: mockUser.fullName,
-          loginTime: new Date().toISOString()
-        };
-
-        setUser(authUser);
-        setLoading(false);
-        resolve(authUser);
-      }, 500);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
     });
+
+    return unsubscribe;
+  }, []);
+
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // User state will be updated by onAuthStateChanged
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    setUser(null);
+  const register = async (email, password, fullName) => {
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        email: email,
+        username: email.split('@')[0],
+        fullName: fullName || "User",
+        role: "customer", // Default role
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw error;
+    }
   };
 
   const isAuthenticated = () => {
@@ -95,6 +120,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     login,
+    register,
     logout,
     isAuthenticated,
     isAdmin,

@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { productService, categoryService } from '../services/productService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ProductManagement() {
-	const [activeTab, setActiveTab] = useState('products'); // products, subsections, categories
+	const { user } = useAuth();
+	const [activeTab, setActiveTab] = useState('products');
 	const [selectedCategory, setSelectedCategory] = useState('appliances');
 	const [selectedSubcategory, setSelectedSubcategory] = useState('refrigerator');
 	const [formData, setFormData] = useState({
@@ -9,8 +12,11 @@ export default function ProductManagement() {
 		price: '',
 		rating: '',
 		description: '',
-		images: []
+		brand: '',
+		specifications: ''
 	});
+	const [imageFiles, setImageFiles] = useState([]);
+	const [imagePreviews, setImagePreviews] = useState([]);
 	const [newSubsectionData, setNewSubsectionData] = useState({
 		category: 'appliances',
 		name: ''
@@ -21,16 +27,40 @@ export default function ProductManagement() {
 	});
 	const [categories, setCategories] = useState({});
 	const [allProducts, setAllProducts] = useState([]);
+	const [loading, setLoading] = useState(false);
+	const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
 
-	const defaultCategories = {
-		appliances: ['refrigerator', 'air-conditioner'],
-		mobiles: ['apple', 'vivo', 'oppo', 'realme', 'oneplus', 'motorola'],
-		electronics: ['home-theater', 'sound-bar'],
-		tv: ['toshiba', 'mi', 'realme', 'samsung', 'lg', 'assembled-tv', 'tcl'],
-		trending: ['best-sellers', 'new-arrivals']
+	// Load categories and products on mount
+	useEffect(() => {
+		loadCategories();
+		loadProducts();
+	}, []);
+
+	const loadCategories = async () => {
+		try {
+			const cats = await categoryService.getAllCategories();
+			setCategories(cats);
+			
+			// Set initial category and subcategory
+			const firstCategory = Object.keys(cats)[0];
+			if (firstCategory) {
+				setSelectedCategory(firstCategory);
+				setSelectedSubcategory(cats[firstCategory][0] || '');
+				setNewSubsectionData({ category: firstCategory, name: '' });
+			}
+		} catch (error) {
+			console.error('Error loading categories:', error);
+		}
 	};
 
-	const currentCategories = Object.keys(categories).length > 0 ? categories : defaultCategories;
+	const loadProducts = async () => {
+		try {
+			const products = await productService.getAllProducts();
+			setAllProducts(products);
+		} catch (error) {
+			console.error('Error loading products:', error);
+		}
+	};
 
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
@@ -43,63 +73,90 @@ export default function ProductManagement() {
 	const handleCategoryChange = (e) => {
 		const newCategory = e.target.value;
 		setSelectedCategory(newCategory);
-		setSelectedSubcategory(currentCategories[newCategory][0]);
+		setSelectedSubcategory(categories[newCategory]?.[0] || '');
 	};
 
 	const handleImageUpload = (e) => {
 		const files = Array.from(e.target.files);
+		setImageFiles(files);
+		
+		// Create previews
+		const previews = [];
 		files.forEach(file => {
 			const reader = new FileReader();
 			reader.onloadend = () => {
-				setFormData(prev => ({
-					...prev,
-					images: [...prev.images, reader.result]
-				}));
+				previews.push(reader.result);
+				if (previews.length === files.length) {
+					setImagePreviews(previews);
+				}
 			};
 			reader.readAsDataURL(file);
 		});
 	};
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
-		if (!formData.title || !formData.price || formData.images.length === 0) {
-			alert('Please fill all required fields and upload at least one image');
+		setSubmitStatus({ type: '', message: '' });
+
+		if (!formData.title || !formData.price || imageFiles.length === 0) {
+			setSubmitStatus({ type: 'error', message: 'Please fill all required fields and upload at least one image' });
 			return;
 		}
 
-		const productData = {
-			id: Date.now(),
-			category: selectedCategory,
-			subcategory: selectedSubcategory,
-			...formData,
-			price: parseFloat(formData.price),
-			rating: parseFloat(formData.rating) || 0,
-			images: formData.images
-		};
+		setLoading(true);
 
-		setAllProducts([...allProducts, productData]);
-		console.log('New Product:', productData);
-		alert('Product added successfully!');
-		
-		// Reset form
-		setFormData({
-			title: '',
-			price: '',
-			rating: '',
-			description: '',
-			images: []
-		});
+		try {
+			const productData = {
+				category: selectedCategory,
+				subcategory: selectedSubcategory,
+				title: formData.title,
+				price: parseFloat(formData.price),
+				rating: parseFloat(formData.rating) || 0,
+				description: formData.description,
+				brand: formData.brand || selectedSubcategory,
+				specifications: formData.specifications,
+				addedBy: user.uid,
+				addedByName: user.fullName
+			};
+
+			await productService.createProduct(productData, imageFiles);
+			
+			setSubmitStatus({ type: 'success', message: '✓ Product added successfully!' });
+			
+			// Reset form
+			setFormData({
+				title: '',
+				price: '',
+				rating: '',
+				description: '',
+				brand: '',
+				specifications: ''
+			});
+			setImageFiles([]);
+			setImagePreviews([]);
+			
+			// Reload products
+			loadProducts();
+			
+			// Clear success message after 3 seconds
+			setTimeout(() => setSubmitStatus({ type: '', message: '' }), 3000);
+		} catch (error) {
+			console.error('Error adding product:', error);
+			setSubmitStatus({ type: 'error', message: 'Failed to add product. Please try again.' });
+		} finally {
+			setLoading(false);
+		}
 	};
 
-	const handleAddSubsection = (e) => {
+	const handleAddSubsection = async (e) => {
 		e.preventDefault();
 		if (!newSubsectionData.name.trim()) {
 			alert('Please enter a subsection name');
 			return;
 		}
 
-		const updatedCategories = { ...currentCategories };
 		const subsectionName = newSubsectionData.name.toLowerCase().replace(/\s+/g, '-');
+		const updatedCategories = { ...categories };
 		
 		if (!updatedCategories[newSubsectionData.category]) {
 			updatedCategories[newSubsectionData.category] = [];
@@ -111,27 +168,36 @@ export default function ProductManagement() {
 		}
 
 		updatedCategories[newSubsectionData.category].push(subsectionName);
-		setCategories(updatedCategories);
 		
-		console.log('New Subsection Added:', {
-			category: newSubsectionData.category,
-			subsection: subsectionName
-		});
-		alert(`Subsection "${subsectionName}" added to ${newSubsectionData.category}!`);
-		
-		setNewSubsectionData({ category: newSubsectionData.category, name: '' });
-	};
-
-	const handleRemoveSubsection = (category, subsection) => {
-		if (window.confirm(`Remove "${subsection}" from ${category}?`)) {
-			const updatedCategories = { ...currentCategories };
-			updatedCategories[category] = updatedCategories[category].filter(s => s !== subsection);
+		try {
+			await categoryService.saveCategory(
+				newSubsectionData.category,
+				updatedCategories[newSubsectionData.category]
+			);
 			setCategories(updatedCategories);
-			alert(`Subsection "${subsection}" removed!`);
+			alert(`Subsection "${subsectionName}" added to ${newSubsectionData.category}!`);
+			setNewSubsectionData({ category: newSubsectionData.category, name: '' });
+		} catch (error) {
+			alert('Failed to add subsection. Please try again.');
 		}
 	};
 
-	const handleAddCategory = (e) => {
+	const handleRemoveSubsection = async (category, subsection) => {
+		if (window.confirm(`Remove "${subsection}" from ${category}?`)) {
+			const updatedCategories = { ...categories };
+			updatedCategories[category] = updatedCategories[category].filter(s => s !== subsection);
+			
+			try {
+				await categoryService.saveCategory(category, updatedCategories[category]);
+				setCategories(updatedCategories);
+				alert(`Subsection "${subsection}" removed!`);
+			} catch (error) {
+				alert('Failed to remove subsection. Please try again.');
+			}
+		}
+	};
+
+	const handleAddCategory = async (e) => {
 		e.preventDefault();
 		if (!newCategoryData.name.trim()) {
 			alert('Please enter a category name');
@@ -139,7 +205,7 @@ export default function ProductManagement() {
 		}
 
 		const categoryName = newCategoryData.name.toLowerCase().replace(/\s+/g, '-');
-		const updatedCategories = { ...currentCategories };
+		const updatedCategories = { ...categories };
 		
 		if (updatedCategories[categoryName]) {
 			alert('This category already exists');
@@ -147,318 +213,712 @@ export default function ProductManagement() {
 		}
 
 		updatedCategories[categoryName] = [];
-		setCategories(updatedCategories);
 		
-		console.log('New Category Added:', {
-			category: categoryName,
-			description: newCategoryData.description
-		});
-		alert(`Category "${categoryName}" added successfully!`);
-		
-		setNewCategoryData({ name: '', description: '' });
+		try {
+			await categoryService.saveCategory(categoryName, []);
+			setCategories(updatedCategories);
+			alert(`Category "${categoryName}" added successfully!`);
+			setNewCategoryData({ name: '', description: '' });
+		} catch (error) {
+			alert('Failed to add category. Please try again.');
+		}
 	};
 
-	const handleRemoveCategory = (category) => {
+	const handleRemoveCategory = async (category) => {
 		if (window.confirm(`Remove category "${category}" and all its subsections?`)) {
-			const updatedCategories = { ...currentCategories };
-			delete updatedCategories[category];
-			setCategories(updatedCategories);
-			alert(`Category "${category}" removed!`);
+			try {
+				await categoryService.deleteCategory(category);
+				const updatedCategories = { ...categories };
+				delete updatedCategories[category];
+				setCategories(updatedCategories);
+				alert(`Category "${category}" removed!`);
+			} catch (error) {
+				alert('Failed to remove category. Please try again.');
+			}
+		}
+	};
+
+	const handleDeleteProduct = async (productId) => {
+		if (window.confirm('Are you sure you want to delete this product?')) {
+			try {
+				await productService.deleteProduct(productId);
+				loadProducts();
+				alert('Product deleted successfully!');
+			} catch (error) {
+				alert('Failed to delete product. Please try again.');
+			}
 		}
 	};
 
 	return (
 		<div className="page-shell">
-			<h1>Admin Dashboard</h1>
-			<p className="text-muted">Manage products, categories, and subsections</p>
+			{/* Admin Header */}
+			<div style={{ 
+				background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', 
+				padding: '2rem', 
+				borderRadius: '12px', 
+				marginBottom: '2rem',
+				boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+			}}>
+				<h1 style={{ margin: 0, color: '#fff', fontSize: '2.5rem', fontWeight: '800' }}>
+					⚡ Admin Dashboard
+				</h1>
+				<p style={{ margin: '0.5rem 0 0 0', color: '#e71d36', fontSize: '1.1rem', fontWeight: '600' }}>
+					Welcome back, {user?.fullName}
+				</p>
+				<p style={{ margin: '0.3rem 0 0 0', color: '#aaa', fontSize: '0.95rem' }}>
+					Manage products, categories, and inventory
+				</p>
+			</div>
 
-			{/* Tabs */}
-			<div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #333' }}>
+			{/* Tabs Navigation */}
+			<div style={{ 
+				display: 'flex', 
+				gap: '0.5rem', 
+				marginBottom: '2rem', 
+				borderBottom: '3px solid #1a1a1a',
+				flexWrap: 'wrap'
+			}}>
 				<button 
 					onClick={() => setActiveTab('products')}
 					style={{ 
-						padding: '0.75rem 1.5rem', 
+						padding: '1rem 2rem', 
 						backgroundColor: activeTab === 'products' ? '#e71d36' : 'transparent',
-						color: activeTab === 'products' ? '#fff' : '#000',
+						color: activeTab === 'products' ? '#fff' : '#1a1a1a',
 						border: 'none',
 						cursor: 'pointer',
-						fontWeight: '600',
-						fontSize: '0.95rem'
+						fontWeight: '700',
+						fontSize: '1rem',
+						borderRadius: '8px 8px 0 0',
+						transition: 'all 0.3s ease',
+						transform: activeTab === 'products' ? 'translateY(3px)' : 'none'
 					}}
 				>
-					Add Products
+					📦 Add Products
+				</button>
+				<button 
+					onClick={() => setActiveTab('list')}
+					style={{ 
+						padding: '1rem 2rem', 
+						backgroundColor: activeTab === 'list' ? '#e71d36' : 'transparent',
+						color: activeTab === 'list' ? '#fff' : '#1a1a1a',
+						border: 'none',
+						cursor: 'pointer',
+						fontWeight: '700',
+						fontSize: '1rem',
+						borderRadius: '8px 8px 0 0',
+						transition: 'all 0.3s ease',
+						transform: activeTab === 'list' ? 'translateY(3px)' : 'none'
+					}}
+				>
+					📋 Product List
 				</button>
 				<button 
 					onClick={() => setActiveTab('subsections')}
 					style={{ 
-						padding: '0.75rem 1.5rem', 
+						padding: '1rem 2rem', 
 						backgroundColor: activeTab === 'subsections' ? '#e71d36' : 'transparent',
-						color: activeTab === 'subsections' ? '#fff' : '#000',
+						color: activeTab === 'subsections' ? '#fff' : '#1a1a1a',
 						border: 'none',
 						cursor: 'pointer',
-						fontWeight: '600',
-						fontSize: '0.95rem'
+						fontWeight: '700',
+						fontSize: '1rem',
+						borderRadius: '8px 8px 0 0',
+						transition: 'all 0.3s ease',
+						transform: activeTab === 'subsections' ? 'translateY(3px)' : 'none'
 					}}
 				>
-					Manage Subsections
+					🏷️ Manage Subsections
 				</button>
 				<button 
 					onClick={() => setActiveTab('categories')}
 					style={{ 
-						padding: '0.75rem 1.5rem', 
+						padding: '1rem 2rem', 
 						backgroundColor: activeTab === 'categories' ? '#e71d36' : 'transparent',
-						color: activeTab === 'categories' ? '#fff' : '#000',
+						color: activeTab === 'categories' ? '#fff' : '#1a1a1a',
 						border: 'none',
 						cursor: 'pointer',
-						fontWeight: '600',
-						fontSize: '0.95rem'
+						fontWeight: '700',
+						fontSize: '1rem',
+						borderRadius: '8px 8px 0 0',
+						transition: 'all 0.3s ease',
+						transform: activeTab === 'categories' ? 'translateY(3px)' : 'none'
 					}}
 				>
-					Manage Categories
+					📁 Manage Categories
 				</button>
 			</div>
 
 			{/* TAB 1: Add Products */}
 			{activeTab === 'products' && (
-				<div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+				<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
 					{/* Form Section */}
 					<div>
-						<form onSubmit={handleSubmit} style={{ backgroundColor: '#f9f9f9', padding: '1.5rem', borderRadius: '4px', border: '1px solid #333' }}>
-							<h2 style={{ marginTop: 0 }}>Add New Product</h2>
+						<form onSubmit={handleSubmit} style={{ 
+							backgroundColor: '#fff', 
+							padding: '2rem', 
+							borderRadius: '12px', 
+							border: '2px solid #1a1a1a',
+							boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+						}}>
+							<h2 style={{ marginTop: 0, color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800' }}>
+								➕ Add New Product
+							</h2>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Category *</label>
+							{submitStatus.message && (
+								<div style={{
+									padding: '1rem',
+									borderRadius: '8px',
+									marginBottom: '1rem',
+									backgroundColor: submitStatus.type === 'success' ? '#d4edda' : '#f8d7da',
+									color: submitStatus.type === 'success' ? '#155724' : '#721c24',
+									border: `1px solid ${submitStatus.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+									fontWeight: '600'
+								}}>
+									{submitStatus.message}
+								</div>
+							)}
+
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Category *
+								</label>
 								<select 
 									value={selectedCategory}
 									onChange={handleCategoryChange}
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px',
+										fontSize: '1rem',
+										fontWeight: '600',
+										backgroundColor: '#fff'
+									}}
 								>
-									{Object.keys(currentCategories).map(cat => (
-										<option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+									{Object.keys(categories).map(cat => (
+										<option key={cat} value={cat}>
+											{cat.charAt(0).toUpperCase() + cat.slice(1)}
+										</option>
 									))}
 								</select>
 							</div>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Subcategory *</label>
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Subcategory *
+								</label>
 								<select 
 									value={selectedSubcategory}
 									onChange={(e) => setSelectedSubcategory(e.target.value)}
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px',
+										fontSize: '1rem',
+										fontWeight: '600',
+										backgroundColor: '#fff'
+									}}
 								>
-									{currentCategories[selectedCategory].map(subcat => (
-										<option key={subcat} value={subcat}>{subcat.charAt(0).toUpperCase() + subcat.slice(1).replace('-', ' ')}</option>
+									{(categories[selectedCategory] || []).map(subcat => (
+										<option key={subcat} value={subcat}>
+											{subcat.charAt(0).toUpperCase() + subcat.slice(1).replace(/-/g, ' ')}
+										</option>
 									))}
 								</select>
 							</div>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Product Title *</label>
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Product Title *
+								</label>
 								<input 
 									type="text"
 									name="title"
 									value={formData.title}
 									onChange={handleInputChange}
 									placeholder="Enter product name"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem',
+										fontWeight: '600'
+									}}
 								/>
 							</div>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Price *</label>
+							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+								<div>
+									<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+										Price (₹) *
+									</label>
+									<input 
+										type="number"
+										name="price"
+										value={formData.price}
+										onChange={handleInputChange}
+										placeholder="0.00"
+										step="0.01"
+										style={{ 
+											width: '100%', 
+											padding: '0.75rem', 
+											border: '2px solid #1a1a1a', 
+											borderRadius: '8px', 
+											fontSize: '1rem',
+											fontWeight: '600'
+										}}
+									/>
+								</div>
+								<div>
+									<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+										Rating (0-5)
+									</label>
+									<input 
+										type="number"
+										name="rating"
+										value={formData.rating}
+										onChange={handleInputChange}
+										placeholder="0.0"
+										min="0"
+										max="5"
+										step="0.1"
+										style={{ 
+											width: '100%', 
+											padding: '0.75rem', 
+											border: '2px solid #1a1a1a', 
+											borderRadius: '8px', 
+											fontSize: '1rem',
+											fontWeight: '600'
+										}}
+									/>
+								</div>
+							</div>
+
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Brand
+								</label>
 								<input 
-									type="number"
-									name="price"
-									value={formData.price}
+									type="text"
+									name="brand"
+									value={formData.brand}
 									onChange={handleInputChange}
-									placeholder="0.00"
-									step="0.01"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem' }}
+									placeholder="Brand name (optional)"
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem',
+										fontWeight: '600'
+									}}
 								/>
 							</div>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Rating (0-5)</label>
-								<input 
-									type="number"
-									name="rating"
-									value={formData.rating}
-									onChange={handleInputChange}
-									placeholder="0.0"
-									min="0"
-									max="5"
-									step="0.1"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem' }}
-								/>
-							</div>
-
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Description</label>
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Description
+								</label>
 								<textarea 
 									name="description"
 									value={formData.description}
 									onChange={handleInputChange}
 									placeholder="Enter product description"
 									rows="4"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem', fontFamily: 'inherit' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem', 
+										fontFamily: 'inherit',
+										fontWeight: '600'
+									}}
+								/>
+							</div>
+
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Specifications
+								</label>
+								<textarea 
+									name="specifications"
+									value={formData.specifications}
+									onChange={handleInputChange}
+									placeholder="Enter key specifications (one per line)"
+									rows="3"
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem', 
+										fontFamily: 'inherit',
+										fontWeight: '600'
+									}}
 								/>
 							</div>
 
 							<div style={{ marginBottom: '1.5rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Product Images *</label>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Product Images *
+								</label>
 								<input
 									type="file"
 									accept="image/*"
 									multiple
 									onChange={handleImageUpload}
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px',
+										fontSize: '0.95rem',
+										fontWeight: '600'
+									}}
 								/>
-								<p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.3rem' }}>Recommended: 400x400px, JPG or PNG. You can select multiple images.</p>
+								<p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem', fontWeight: '600' }}>
+									📸 Recommended: 400x400px, JPG or PNG. You can select multiple images.
+								</p>
 							</div>
 
 							<button 
 								type="submit"
+								disabled={loading}
 								style={{ 
 									width: '100%', 
-									padding: '0.7rem', 
-									backgroundColor: '#e71d36', 
+									padding: '1rem', 
+									backgroundColor: loading ? '#999' : '#e71d36', 
 									color: '#fff', 
 									border: 'none', 
-									borderRadius: '4px',
-									fontWeight: '600',
-									cursor: 'pointer',
-									fontSize: '0.95rem'
+									borderRadius: '8px',
+									fontWeight: '800',
+									cursor: loading ? 'not-allowed' : 'pointer',
+									fontSize: '1.1rem',
+									boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+									transition: 'all 0.3s ease'
 								}}
 							>
-								Add Product
+								{loading ? '⏳ Adding Product...' : '➕ Add Product'}
 							</button>
 						</form>
 					</div>
 
 					{/* Preview Section */}
 					<div>
-						<h2>Product Preview</h2>
-						<div style={{ backgroundColor: '#f9f9f9', padding: '1.5rem', borderRadius: '4px', border: '1px solid #333' }}>
+						<h2 style={{ color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800' }}>
+							👁️ Product Preview
+						</h2>
+						<div style={{ 
+							backgroundColor: '#fff', 
+							padding: '2rem', 
+							borderRadius: '12px', 
+							border: '2px solid #1a1a1a',
+							boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+						}}>
 							<div style={{
-								backgroundColor: '#fff',
-								border: '1px solid #ddd',
-								borderRadius: '4px',
+								backgroundColor: '#f9f9f9',
+								border: '2px solid #e0e0e0',
+								borderRadius: '8px',
 								overflow: 'hidden',
-								textAlign: 'center'
+								textAlign: 'center',
+								marginBottom: '1rem'
 							}}>
-								{formData.images.length > 0 ? (
-									<div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '1rem' }}>
-										{formData.images.map((image, index) => (
+								{imagePreviews.length > 0 ? (
+									<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', padding: '1rem' }}>
+										{imagePreviews.map((image, index) => (
 											<img
 												key={index}
 												src={image}
 												alt={`Product preview ${index + 1}`}
-												style={{ width: 'calc(50% - 0.25rem)', height: '120px', objectFit: 'contain', border: '1px solid #eee', borderRadius: '4px' }}
+												style={{ 
+													width: '100%', 
+													height: '150px', 
+													objectFit: 'contain', 
+													border: '2px solid #e0e0e0', 
+													borderRadius: '8px',
+													backgroundColor: '#fff'
+												}}
 											/>
 										))}
 									</div>
 								) : (
-									<div style={{ height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
-										No images selected
+									<div style={{ 
+										height: '300px', 
+										display: 'flex', 
+										alignItems: 'center', 
+										justifyContent: 'center', 
+										color: '#999',
+										fontSize: '1.2rem',
+										fontWeight: '700'
+									}}>
+										📷 No images selected
 									</div>
 								)}
 							</div>
 
-							<div style={{ marginTop: '1rem' }}>
-								<h3 style={{ margin: '0.5rem 0', color: '#000' }}>{formData.title || 'Product Name'}</h3>
-							<p style={{ margin: '0.5rem 0', color: '#e71d36', fontSize: '1.2rem', fontWeight: '700' }}>
-								₹{formData.price || '0.00'}
-							</p>
-								<p style={{ margin: '0.5rem 0', color: '#e71d36', fontSize: '0.9rem' }}>
-									{'★'.repeat(Math.floor(formData.rating))} {formData.rating ? `(${formData.rating})` : '(0)'}
+							<div>
+								<h3 style={{ margin: '0.5rem 0', color: '#1a1a1a', fontSize: '1.5rem', fontWeight: '800' }}>
+									{formData.title || 'Product Name'}
+								</h3>
+								<p style={{ margin: '0.5rem 0', color: '#e71d36', fontSize: '1.8rem', fontWeight: '900' }}>
+									₹{formData.price || '0.00'}
 								</p>
-								<p style={{ margin: '0.5rem 0', color: '#555', fontSize: '0.9rem' }}>
+								<p style={{ margin: '0.5rem 0', color: '#e71d36', fontSize: '1.1rem', fontWeight: '700' }}>
+									{'★'.repeat(Math.floor(formData.rating || 0))}{'☆'.repeat(5 - Math.floor(formData.rating || 0))} 
+									{formData.rating ? ` (${formData.rating})` : ' (0)'}
+								</p>
+								{formData.brand && (
+									<p style={{ margin: '0.5rem 0', color: '#666', fontSize: '1rem', fontWeight: '700' }}>
+										Brand: {formData.brand}
+									</p>
+								)}
+								<p style={{ margin: '1rem 0', color: '#555', fontSize: '0.95rem', lineHeight: '1.6', fontWeight: '600' }}>
 									{formData.description || 'Product description will appear here'}
 								</p>
+								{formData.specifications && (
+									<div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+										<p style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#1a1a1a' }}>Specifications:</p>
+										<p style={{ fontSize: '0.9rem', color: '#555', whiteSpace: 'pre-line', fontWeight: '600' }}>
+											{formData.specifications}
+										</p>
+									</div>
+								)}
 							</div>
 
-							<div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f0f0f0', borderRadius: '4px', fontSize: '0.85rem', color: '#555' }}>
-								<p><strong>Category:</strong> {selectedCategory}</p>
-								<p><strong>Subcategory:</strong> {selectedSubcategory}</p>
+							<div style={{ 
+								marginTop: '1.5rem', 
+								padding: '1rem', 
+								backgroundColor: '#1a1a1a', 
+								borderRadius: '8px', 
+								fontSize: '0.9rem', 
+								color: '#fff'
+							}}>
+								<p style={{ marginBottom: '0.5rem', fontWeight: '700' }}>
+									<strong>📁 Category:</strong> {selectedCategory}
+								</p>
+								<p style={{ margin: 0, fontWeight: '700' }}>
+									<strong>🏷️ Subcategory:</strong> {selectedSubcategory}
+								</p>
 							</div>
 						</div>
 					</div>
 				</div>
 			)}
 
-			{/* TAB 2: Manage Subsections */}
+			{/* TAB 2: Product List */}
+			{activeTab === 'list' && (
+				<div>
+					<h2 style={{ color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800', marginBottom: '1.5rem' }}>
+						📋 All Products ({allProducts.length})
+					</h2>
+					<div style={{ display: 'grid', gap: '1rem' }}>
+						{allProducts.length === 0 ? (
+							<div style={{ 
+								textAlign: 'center', 
+								padding: '4rem 2rem', 
+								backgroundColor: '#f9f9f9', 
+								borderRadius: '12px',
+								border: '2px dashed #ccc'
+							}}>
+								<p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</p>
+								<p style={{ fontSize: '1.3rem', fontWeight: '700', color: '#666' }}>
+									No products added yet
+								</p>
+								<p style={{ color: '#999', marginTop: '0.5rem' }}>
+									Add your first product to get started
+								</p>
+							</div>
+						) : (
+							allProducts.map((product) => (
+								<div key={product.id} style={{ 
+									backgroundColor: '#fff', 
+									padding: '1.5rem', 
+									borderRadius: '12px', 
+									border: '2px solid #1a1a1a',
+									display: 'grid',
+									gridTemplateColumns: '120px 1fr auto',
+									gap: '1.5rem',
+									alignItems: 'center',
+									boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+								}}>
+									<img 
+										src={product.images?.[0] || 'https://via.placeholder.com/120'} 
+										alt={product.title}
+										style={{ 
+											width: '120px', 
+											height: '120px', 
+											objectFit: 'contain', 
+											border: '2px solid #e0e0e0', 
+											borderRadius: '8px',
+											backgroundColor: '#f9f9f9'
+										}}
+									/>
+									<div>
+										<h3 style={{ margin: '0 0 0.5rem 0', color: '#1a1a1a', fontSize: '1.3rem', fontWeight: '800' }}>
+											{product.title}
+										</h3>
+										<p style={{ margin: '0.3rem 0', color: '#e71d36', fontSize: '1.3rem', fontWeight: '900' }}>
+											₹{product.price}
+										</p>
+										<p style={{ margin: '0.3rem 0', fontSize: '0.9rem', color: '#666', fontWeight: '700' }}>
+											📁 {product.category} / 🏷️ {product.subcategory}
+										</p>
+										<p style={{ margin: '0.3rem 0', fontSize: '0.85rem', color: '#999', fontWeight: '600' }}>
+											Added by: {product.addedByName}
+										</p>
+									</div>
+									<button
+										onClick={() => handleDeleteProduct(product.id)}
+										style={{
+											padding: '0.75rem 1.5rem',
+											backgroundColor: '#e71d36',
+											color: '#fff',
+											border: 'none',
+											borderRadius: '8px',
+											cursor: 'pointer',
+											fontWeight: '700',
+											fontSize: '1rem',
+											boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+										}}
+									>
+										🗑️ Delete
+									</button>
+								</div>
+							))
+						)}
+					</div>
+				</div>
+			)}
+
+			{/* TAB 3: Manage Subsections */}
 			{activeTab === 'subsections' && (
-				<div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+				<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
 					{/* Add Subsection Form */}
 					<div>
-						<form onSubmit={handleAddSubsection} style={{ backgroundColor: '#f9f9f9', padding: '1.5rem', borderRadius: '4px', border: '1px solid #333' }}>
-							<h2 style={{ marginTop: 0 }}>Add New Subsection</h2>
+						<form onSubmit={handleAddSubsection} style={{ 
+							backgroundColor: '#fff', 
+							padding: '2rem', 
+							borderRadius: '12px', 
+							border: '2px solid #1a1a1a',
+							boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+						}}>
+							<h2 style={{ marginTop: 0, color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800' }}>
+								➕ Add New Subsection
+							</h2>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Select Category *</label>
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Select Category *
+								</label>
 								<select 
 									value={newSubsectionData.category}
 									onChange={(e) => setNewSubsectionData({ ...newSubsectionData, category: e.target.value })}
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px',
+										fontSize: '1rem',
+										fontWeight: '600'
+									}}
 								>
-									{Object.keys(currentCategories).map(cat => (
-										<option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+									{Object.keys(categories).map(cat => (
+										<option key={cat} value={cat}>
+											{cat.charAt(0).toUpperCase() + cat.slice(1)}
+										</option>
 									))}
 								</select>
 							</div>
 
 							<div style={{ marginBottom: '1.5rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Subsection Name *</label>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Subsection Name *
+								</label>
 								<input 
 									type="text"
 									value={newSubsectionData.name}
 									onChange={(e) => setNewSubsectionData({ ...newSubsectionData, name: e.target.value })}
 									placeholder="e.g., iPhone, iPad, Apple Watch"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem',
+										fontWeight: '600'
+									}}
 								/>
-								<p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.3rem' }}>Name will be converted to lowercase with hyphens</p>
+								<p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem', fontWeight: '600' }}>
+									💡 Name will be converted to lowercase with hyphens
+								</p>
 							</div>
 
 							<button 
 								type="submit"
 								style={{ 
 									width: '100%', 
-									padding: '0.7rem', 
+									padding: '1rem', 
 									backgroundColor: '#e71d36', 
 									color: '#fff', 
 									border: 'none', 
-									borderRadius: '4px',
-									fontWeight: '600',
+									borderRadius: '8px',
+									fontWeight: '800',
 									cursor: 'pointer',
-									fontSize: '0.95rem'
+									fontSize: '1.1rem',
+									boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
 								}}
 							>
-								Add Subsection
+								➕ Add Subsection
 							</button>
 						</form>
 					</div>
 
 					{/* Existing Subsections */}
 					<div>
-						<h2>Existing Subsections</h2>
+						<h2 style={{ color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800', marginBottom: '1rem' }}>
+							📦 Existing Subsections
+						</h2>
 						<div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-							{Object.entries(currentCategories).map(([category, subs]) => (
-								<div key={category} style={{ marginBottom: '1.5rem', backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '4px', border: '1px solid #333' }}>
-									<h3 style={{ margin: '0 0 0.5rem 0', color: '#e71d36' }}>{category.toUpperCase()}</h3>
+							{Object.entries(categories).map(([category, subs]) => (
+								<div key={category} style={{ 
+									marginBottom: '1.5rem', 
+									backgroundColor: '#fff', 
+									padding: '1.5rem', 
+									borderRadius: '12px', 
+									border: '2px solid #1a1a1a',
+									boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+								}}>
+									<h3 style={{ margin: '0 0 1rem 0', color: '#e71d36', fontSize: '1.3rem', fontWeight: '800' }}>
+										{category.toUpperCase()}
+									</h3>
 									<div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
 										{subs.map(sub => (
-											<div key={sub} style={{ backgroundColor: '#e71d36', color: '#fff', padding: '0.5rem 0.75rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+											<div key={sub} style={{ 
+												backgroundColor: '#1a1a1a', 
+												color: '#fff', 
+												padding: '0.6rem 1rem', 
+												borderRadius: '8px', 
+												display: 'flex', 
+												alignItems: 'center', 
+												gap: '0.75rem',
+												fontWeight: '700'
+											}}>
 												<span>{sub}</span>
 												<button 
 													onClick={() => handleRemoveSubsection(category, sub)}
 													style={{ 
-														backgroundColor: 'rgba(255,255,255,0.3)',
+														backgroundColor: '#e71d36',
 														border: 'none',
 														color: '#fff',
 														cursor: 'pointer',
-														padding: '0.2rem 0.4rem',
-														borderRadius: '2px',
-														fontSize: '0.8rem'
+														padding: '0.3rem 0.6rem',
+														borderRadius: '4px',
+														fontSize: '0.85rem',
+														fontWeight: '700'
 													}}
 												>
 													✕
@@ -473,34 +933,63 @@ export default function ProductManagement() {
 				</div>
 			)}
 
-			{/* TAB 3: Manage Categories */}
+			{/* TAB 4: Manage Categories */}
 			{activeTab === 'categories' && (
-				<div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+				<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
 					{/* Add Category Form */}
 					<div>
-						<form onSubmit={handleAddCategory} style={{ backgroundColor: '#f9f9f9', padding: '1.5rem', borderRadius: '4px', border: '1px solid #333' }}>
-							<h2 style={{ marginTop: 0 }}>Add New Category</h2>
+						<form onSubmit={handleAddCategory} style={{ 
+							backgroundColor: '#fff', 
+							padding: '2rem', 
+							borderRadius: '12px', 
+							border: '2px solid #1a1a1a',
+							boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+						}}>
+							<h2 style={{ marginTop: 0, color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800' }}>
+								➕ Add New Category
+							</h2>
 
-							<div style={{ marginBottom: '1rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Category Name *</label>
+							<div style={{ marginBottom: '1.2rem' }}>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Category Name *
+								</label>
 								<input 
 									type="text"
 									value={newCategoryData.name}
 									onChange={(e) => setNewCategoryData({ ...newCategoryData, name: e.target.value })}
 									placeholder="e.g., Computers, Home & Kitchen"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem',
+										fontWeight: '600'
+									}}
 								/>
-								<p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.3rem' }}>Name will be converted to lowercase with hyphens</p>
+								<p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem', fontWeight: '600' }}>
+									💡 Name will be converted to lowercase with hyphens
+								</p>
 							</div>
 
 							<div style={{ marginBottom: '1.5rem' }}>
-								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Description</label>
+								<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+									Description
+								</label>
 								<textarea 
 									value={newCategoryData.description}
 									onChange={(e) => setNewCategoryData({ ...newCategoryData, description: e.target.value })}
 									placeholder="Optional: Brief description of the category"
 									rows="3"
-									style={{ width: '100%', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px', fontSize: '0.9rem', fontFamily: 'inherit' }}
+									style={{ 
+										width: '100%', 
+										padding: '0.75rem', 
+										border: '2px solid #1a1a1a', 
+										borderRadius: '8px', 
+										fontSize: '1rem', 
+										fontFamily: 'inherit',
+										fontWeight: '600'
+									}}
 								/>
 							</div>
 
@@ -508,34 +997,54 @@ export default function ProductManagement() {
 								type="submit"
 								style={{ 
 									width: '100%', 
-									padding: '0.7rem', 
+									padding: '1rem', 
 									backgroundColor: '#e71d36', 
 									color: '#fff', 
 									border: 'none', 
-									borderRadius: '4px',
-									fontWeight: '600',
+									borderRadius: '8px',
+									fontWeight: '800',
 									cursor: 'pointer',
-									fontSize: '0.95rem'
+									fontSize: '1.1rem',
+									boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
 								}}
 							>
-								Add Category
+								➕ Add Category
 							</button>
 						</form>
 					</div>
 
 					{/* Existing Categories */}
 					<div>
-						<h2>Existing Categories ({Object.keys(currentCategories).length})</h2>
+						<h2 style={{ color: '#1a1a1a', fontSize: '1.8rem', fontWeight: '800', marginBottom: '1rem' }}>
+							📁 Existing Categories ({Object.keys(categories).length})
+						</h2>
 						<div style={{ display: 'grid', gap: '1rem', maxHeight: '600px', overflowY: 'auto' }}>
-							{Object.entries(currentCategories).map(([category, subs]) => (
-								<div key={category} style={{ backgroundColor: '#f9f9f9', padding: '1rem', borderRadius: '4px', border: '1px solid #333' }}>
+							{Object.entries(categories).map(([category, subs]) => (
+								<div key={category} style={{ 
+									backgroundColor: '#fff', 
+									padding: '1.5rem', 
+									borderRadius: '12px', 
+									border: '2px solid #1a1a1a',
+									boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+								}}>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
 										<div style={{ flex: 1 }}>
-											<h3 style={{ margin: '0 0 0.5rem 0', color: '#000' }}>{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
-											<p style={{ margin: '0.3rem 0', color: '#666', fontSize: '0.9rem' }}>📦 {subs.length} subsections</p>
-											<div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+											<h3 style={{ margin: '0 0 0.75rem 0', color: '#1a1a1a', fontSize: '1.4rem', fontWeight: '800' }}>
+												{category.charAt(0).toUpperCase() + category.slice(1)}
+											</h3>
+											<p style={{ margin: '0.5rem 0', color: '#666', fontSize: '1rem', fontWeight: '700' }}>
+												📦 {subs.length} subsections
+											</p>
+											<div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
 												{subs.map(sub => (
-													<span key={sub} style={{ backgroundColor: '#e71d36', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '2px', fontSize: '0.75rem' }}>
+													<span key={sub} style={{ 
+														backgroundColor: '#1a1a1a', 
+														color: '#fff', 
+														padding: '0.3rem 0.7rem', 
+														borderRadius: '6px', 
+														fontSize: '0.85rem',
+														fontWeight: '700'
+													}}>
 														{sub}
 													</span>
 												))}
@@ -548,14 +1057,15 @@ export default function ProductManagement() {
 												border: 'none',
 												color: '#fff',
 												cursor: 'pointer',
-												padding: '0.5rem 0.75rem',
-												borderRadius: '4px',
-												fontSize: '0.9rem',
-												fontWeight: '600',
-												marginLeft: '1rem'
+												padding: '0.75rem 1rem',
+												borderRadius: '8px',
+												fontSize: '1rem',
+												fontWeight: '800',
+												marginLeft: '1rem',
+												boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
 											}}
 										>
-											Delete
+											🗑️ Delete
 										</button>
 									</div>
 								</div>
@@ -566,18 +1076,60 @@ export default function ProductManagement() {
 			)}
 
 			{/* Statistics Section */}
-			<div style={{ marginTop: '2rem', backgroundColor: '#f9f9f9', padding: '1.5rem', borderRadius: '4px', border: '1px solid #333', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-				<div style={{ padding: '1rem', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e71d36', textAlign: 'center' }}>
-					<p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '0.9rem' }}>📦 Total Products</p>
-					<h3 style={{ margin: 0, color: '#e71d36', fontSize: '2rem' }}>{allProducts.length}</h3>
+			<div style={{ 
+				marginTop: '3rem', 
+				background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', 
+				padding: '2rem', 
+				borderRadius: '12px', 
+				display: 'grid', 
+				gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+				gap: '1.5rem',
+				boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+			}}>
+				<div style={{ 
+					padding: '1.5rem', 
+					backgroundColor: '#fff', 
+					borderRadius: '12px', 
+					border: '3px solid #e71d36', 
+					textAlign: 'center',
+					boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+				}}>
+					<p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '1rem', fontWeight: '700' }}>
+						📦 Total Products
+					</p>
+					<h3 style={{ margin: 0, color: '#e71d36', fontSize: '3rem', fontWeight: '900' }}>
+						{allProducts.length}
+					</h3>
 				</div>
-				<div style={{ padding: '1rem', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e71d36', textAlign: 'center' }}>
-					<p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '0.9rem' }}>📁 Total Categories</p>
-					<h3 style={{ margin: 0, color: '#e71d36', fontSize: '2rem' }}>{Object.keys(currentCategories).length}</h3>
+				<div style={{ 
+					padding: '1.5rem', 
+					backgroundColor: '#fff', 
+					borderRadius: '12px', 
+					border: '3px solid #e71d36', 
+					textAlign: 'center',
+					boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+				}}>
+					<p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '1rem', fontWeight: '700' }}>
+						📁 Total Categories
+					</p>
+					<h3 style={{ margin: 0, color: '#e71d36', fontSize: '3rem', fontWeight: '900' }}>
+						{Object.keys(categories).length}
+					</h3>
 				</div>
-				<div style={{ padding: '1rem', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e71d36', textAlign: 'center' }}>
-					<p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '0.9rem' }}>🏷️ Total Subsections</p>
-					<h3 style={{ margin: 0, color: '#e71d36', fontSize: '2rem' }}>{Object.values(currentCategories).reduce((sum, subs) => sum + subs.length, 0)}</h3>
+				<div style={{ 
+					padding: '1.5rem', 
+					backgroundColor: '#fff', 
+					borderRadius: '12px', 
+					border: '3px solid #e71d36', 
+					textAlign: 'center',
+					boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+				}}>
+					<p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '1rem', fontWeight: '700' }}>
+						🏷️ Total Subsections
+					</p>
+					<h3 style={{ margin: 0, color: '#e71d36', fontSize: '3rem', fontWeight: '900' }}>
+						{Object.values(categories).reduce((sum, subs) => sum + subs.length, 0)}
+					</h3>
 				</div>
 			</div>
 		</div>
