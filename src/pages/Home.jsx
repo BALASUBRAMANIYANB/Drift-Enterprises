@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { products as localProducts } from "../data/products.js";
+import { productService } from "../services/productService";
 
 const banners = [
   "/assets/home/Banner1.jpg",
@@ -13,8 +14,7 @@ export default function Home() {
   const [currentBanner, setCurrentBanner] = useState(0);
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/products")
-      .then((r) => r.json())
+    productService.getAllProducts()
       .then(setProducts)
       .catch(() => setProducts(localProducts));
   }, []);

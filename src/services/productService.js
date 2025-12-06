@@ -10,16 +10,25 @@ import {
   orderByChild,
   equalTo
 } from "firebase/database";
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { database, storage } from "../config/firebase";
+import { database } from "../config/firebase";
+
+// Helper function to convert file to base64
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 // Product CRUD Operations
 export const productService = {
   // Create a new product
   async createProduct(productData, imageFiles) {
     try {
-      // Upload images to Firebase Storage
-      const imageUrls = await this.uploadProductImages(imageFiles);
+      // Convert images to base64 and store in database
+      const imageUrls = await this.processProductImages(imageFiles);
       
       const product = {
         ...productData,
@@ -130,18 +139,6 @@ export const productService = {
   async deleteProduct(productId) {
     try {
       const productRef = dbRef(database, `products/${productId}`);
-      
-      // Get product data to delete associated images
-      const snapshot = await get(productRef);
-      if (snapshot.exists()) {
-        const product = snapshot.val();
-        
-        // Delete images from storage
-        if (product.images && Array.isArray(product.images)) {
-          await this.deleteProductImages(product.images);
-        }
-      }
-      
       await remove(productRef);
       return { success: true };
     } catch (error) {
@@ -150,41 +147,18 @@ export const productService = {
     }
   },
 
-  // Upload product images to Firebase Storage
-  async uploadProductImages(imageFiles) {
+  // Process product images (convert to base64)
+  async processProductImages(imageFiles) {
     try {
-      const uploadPromises = imageFiles.map(async (file) => {
-        const timestamp = Date.now();
-        const fileName = `products/${timestamp}_${file.name}`;
-        const fileRef = storageRef(storage, fileName);
-        
-        await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(fileRef);
-        return downloadURL;
+      const base64Promises = imageFiles.map(async (file) => {
+        const base64String = await fileToBase64(file);
+        return base64String;
       });
 
-      return await Promise.all(uploadPromises);
+      return await Promise.all(base64Promises);
     } catch (error) {
-      console.error("Error uploading images:", error);
+      console.error("Error processing images:", error);
       throw error;
-    }
-  },
-
-  // Delete product images from Firebase Storage
-  async deleteProductImages(imageUrls) {
-    try {
-      const deletePromises = imageUrls.map(async (url) => {
-        try {
-          const imageRef = storageRef(storage, url);
-          await deleteObject(imageRef);
-        } catch (error) {
-          console.warn("Could not delete image:", url, error);
-        }
-      });
-
-      await Promise.all(deletePromises);
-    } catch (error) {
-      console.error("Error deleting images:", error);
     }
   }
 };

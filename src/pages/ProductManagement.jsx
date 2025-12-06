@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { productService, categoryService } from '../services/productService';
 import { useAuth } from '../contexts/AuthContext';
+import { initCategories } from '../utils/initCategories';
 
 export default function ProductManagement() {
 	const { user } = useAuth();
@@ -50,6 +51,16 @@ export default function ProductManagement() {
 			}
 		} catch (error) {
 			console.error('Error loading categories:', error);
+		}
+	};
+
+	const handleInitCategories = async () => {
+		try {
+			await initCategories();
+			alert('✅ Categories initialized! Reloading...');
+			await loadCategories();
+		} catch (error) {
+			alert('❌ Failed to initialize categories');
 		}
 	};
 
@@ -258,17 +269,40 @@ export default function ProductManagement() {
 				padding: '2rem', 
 				borderRadius: '12px', 
 				marginBottom: '2rem',
-				boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+				boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+				display: 'flex',
+				justifyContent: 'space-between',
+				alignItems: 'center'
 			}}>
-				<h1 style={{ margin: 0, color: '#fff', fontSize: '2.5rem', fontWeight: '800' }}>
-					⚡ Admin Dashboard
-				</h1>
-				<p style={{ margin: '0.5rem 0 0 0', color: '#e71d36', fontSize: '1.1rem', fontWeight: '600' }}>
-					Welcome back, {user?.fullName}
-				</p>
-				<p style={{ margin: '0.3rem 0 0 0', color: '#aaa', fontSize: '0.95rem' }}>
-					Manage products, categories, and inventory
-				</p>
+				<div>
+					<h1 style={{ margin: 0, color: '#fff', fontSize: '2.5rem', fontWeight: '800' }}>
+						⚡ Admin Dashboard
+					</h1>
+					<p style={{ margin: '0.5rem 0 0 0', color: '#e71d36', fontSize: '1.1rem', fontWeight: '600' }}>
+						Welcome back, {user?.fullName}
+					</p>
+					<p style={{ margin: '0.3rem 0 0 0', color: '#aaa', fontSize: '0.95rem' }}>
+						Manage products, categories, and inventory
+					</p>
+				</div>
+				{Object.keys(categories).length === 0 && (
+					<button
+						onClick={handleInitCategories}
+						style={{
+							padding: '1rem 1.5rem',
+							backgroundColor: '#e71d36',
+							color: '#fff',
+							border: 'none',
+							borderRadius: '8px',
+							cursor: 'pointer',
+							fontWeight: '700',
+							fontSize: '1rem',
+							boxShadow: '0 2px 8px rgba(231, 29, 54, 0.3)'
+						}}
+					>
+						🔧 Initialize Categories
+					</button>
+				)}
 			</div>
 
 			{/* Tabs Navigation */}
