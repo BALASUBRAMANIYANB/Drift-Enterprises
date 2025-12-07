@@ -1,10 +1,30 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function ProtectedRoute({ children, requireAdmin = false }) {
-  const { user, isAdmin, isAuthenticated } = useAuth();
+  const { user, isAdmin, isAuthenticated, loading } = useAuth();
   const location = useLocation();
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        minHeight: "60vh",
+        flexDirection: "column",
+        gap: "1rem"
+      }}>
+        <div style={{ 
+          fontSize: "3rem",
+          animation: "spin 1s linear infinite"
+        }}>⏳</div>
+        <p style={{ color: "#666" }}>Loading...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated()) {
     // Redirect to login page with return URL
@@ -12,9 +32,9 @@ export default function ProtectedRoute({ children, requireAdmin = false }) {
   }
 
   if (requireAdmin && !isAdmin()) {
-    // User is authenticated but not an admin
+    // User is authenticated but not an admin - show access denied
     return (
-      <div className="page-shell" style={{ maxWidth: "800px", textAlign: "center" }}>
+      <div className="page-shell" style={{ maxWidth: "800px", textAlign: "center", margin: "0 auto" }}>
         <div style={{ padding: "4rem 2rem" }}>
           <div style={{ fontSize: "6rem", marginBottom: "1rem" }}>🚫</div>
           <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#1a1a1a" }}>
@@ -47,7 +67,17 @@ export default function ProtectedRoute({ children, requireAdmin = false }) {
             </p>
           </div>
 
-          <Navigate to="/" replace />
+          <Link to="/" style={{
+            display: "inline-block",
+            padding: "0.75rem 2rem",
+            background: "#e71d36",
+            color: "white",
+            textDecoration: "none",
+            borderRadius: "8px",
+            fontWeight: "600"
+          }}>
+            ← Back to Home
+          </Link>
         </div>
       </div>
     );

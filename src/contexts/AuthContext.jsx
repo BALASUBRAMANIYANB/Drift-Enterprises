@@ -13,63 +13,83 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastFetchedUid, setLastFetchedUid] = useState(null);
 
   useEffect(() => {
+    let logoutTimer = null;
+    
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Fetch user role from Realtime Database
-        try {
-          const userRef = dbRef(database, `users/${firebaseUser.uid}`);
-          const snapshot = await get(userRef);
-          
-          if (snapshot.exists()) {
-            const userData = snapshot.val();
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              username: userData.username || firebaseUser.email.split('@')[0],
-              fullName: userData.fullName || firebaseUser.displayName || "User",
-              role: userData.role || "customer",
-              loginTime: new Date().toISOString()
-            });
-          } else {
-            // If user document doesn't exist, create one with default role
-            const defaultUserData = {
-              email: firebaseUser.email,
-              username: firebaseUser.email.split('@')[0],
-              fullName: firebaseUser.displayName || "User",
-              role: "customer",
-              createdAt: Date.now()
-            };
-            await set(userRef, defaultUserData);
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              username: defaultUserData.username,
-              fullName: defaultUserData.fullName,
-              role: defaultUserData.role,
-              loginTime: new Date().toISOString()
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
+      // Clear any pending logout timer
+      if (logoutTimer) {
+        clearTimeout(logoutTimer);
+        logoutTimer = null;
       }
-      setLoading(false);
+
+      if (firebaseUser) {
+        // Only fetch user data if we haven't fetched for this user yet or UID changed
+        if (lastFetchedUid !== firebaseUser.uid) {
+          try {
+            const userRef = dbRef(database, `users/${firebaseUser.uid}`);
+            const snapshot = await get(userRef);
+            
+            if (snapshot.exists()) {
+              const userData = snapshot.val();
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                username: userData.username || firebaseUser.email.split('@')[0],
+                fullName: userData.fullName || firebaseUser.displayName || "User",
+                role: userData.role || "customer"
+              });
+            } else {
+              // If user document doesn't exist, create one with default role
+              const defaultUserData = {
+                email: firebaseUser.email,
+                username: firebaseUser.email.split('@')[0],
+                fullName: firebaseUser.displayName || "User",
+                role: "customer",
+                createdAt: Date.now()
+              };
+              await set(userRef, defaultUserData);
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                username: defaultUserData.username,
+                fullName: defaultUserData.fullName,
+                role: defaultUserData.role
+              });
+            }
+            setLastFetchedUid(firebaseUser.uid);
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            setUser(null);
+            setLastFetchedUid(null);
+          }
+        }
+        setLoading(false);
+      } else {
+        // Debounce logout to prevent auto-logout during token refresh
+        logoutTimer = setTimeout(() => {
+          setUser(null);
+          setLastFetchedUid(null);
+          setLoading(false);
+        }, 300);
+      }
     });
 
-    return unsubscribe;
-  }, []);
+    return () => {
+      unsubscribe();
+      if (logoutTimer) clearTimeout(logoutTimer);
+    };
+  }, [lastFetchedUid]);
 
   const login = async (email, password) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // User state will be updated by onAuthStateChanged
+      // Loading will be set to false by onAuthStateChanged
     } catch (error) {
       setLoading(false);
       throw error;
@@ -101,6 +121,7 @@ export function AuthProvider({ children }) {
     try {
       await signOut(auth);
       setUser(null);
+      setLastFetchedUid(null);
     } catch (error) {
       console.error("Logout error:", error);
       throw error;

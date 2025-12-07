@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartProvider";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,6 +8,10 @@ export default function Header() {
 	const { user, isAuthenticated, logout, isAdmin } = useAuth();
 	const [openGroup, setOpenGroup] = useState(null);
 	const navigate = useNavigate();
+	
+	// Memoize auth checks to prevent unnecessary re-renders
+	const userIsAuthenticated = useMemo(() => isAuthenticated(), [user]);
+	const userIsAdmin = useMemo(() => isAdmin(), [user]);
 
 	const handleLogout = () => {
 		logout();
@@ -33,13 +37,13 @@ export default function Header() {
 					<button type="submit" className="amazon-search-button">🔍 Search</button>
 				</form>
 				<nav className="amazon-header-links">
-					{isAdmin() && (
+					{userIsAdmin && (
 						<Link to="/admin/products" className="amazon-header-link">
 							<span className="small">Manage</span>
 							<span className="bold">Products</span>
 						</Link>
 					)}
-					{isAuthenticated() ? (
+					{userIsAuthenticated ? (
 						<>
 							<Link to="/account" className="amazon-header-link">
 								<span className="small">Hello, {user?.username}</span>
