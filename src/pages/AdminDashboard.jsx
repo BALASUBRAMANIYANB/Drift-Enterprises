@@ -1,10 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { ref as dbRef, get } from 'firebase/database';
+import { database } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState({ totalSales: 0, productCount: 0, customerCount: 0, orderCount: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardStats();
+  }, []);
+
+  const loadDashboardStats = async () => {
+    try {
+      // Load products count
+      const productsRef = dbRef(database, 'products');
+      const productsSnapshot = await get(productsRef);
+      const productCount = productsSnapshot.exists() ? Object.keys(productsSnapshot.val()).length : 0;
+
+      // Load orders and calculate total sales
+      const ordersRef = dbRef(database, 'orders');
+      const ordersSnapshot = await get(ordersRef);
+      let totalSales = 0;
+      let orderCount = 0;
+      if (ordersSnapshot.exists()) {
+        const orders = ordersSnapshot.val();
+        orderCount = Object.keys(orders).length;
+        Object.values(orders).forEach((order) => {
+          totalSales += order.total || 0;
+        });
+      }
+
+      // Load customers count
+      const usersRef = dbRef(database, 'users');
+      const usersSnapshot = await get(usersRef);
+      let customerCount = 0;
+      if (usersSnapshot.exists()) {
+        const users = usersSnapshot.val();
+        customerCount = Object.values(users).filter(u => u.role !== 'admin').length;
+      }
+
+      setStats({
+        totalSales: totalSales.toFixed(2),
+        productCount,
+        customerCount,
+        orderCount
+      });
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const dashboardCards = [
     {
@@ -71,21 +121,28 @@ const AdminDashboard = () => {
             <span className="stat-icon">🛍️</span>
             <div className="stat-info">
               <h3>Total Sales</h3>
-              <p className="stat-value">₹0</p>
+              <p className="stat-value">₹{loading ? '...' : stats.totalSales}</p>
             </div>
           </div>
           <div className="stat-card">
             <span className="stat-icon">📦</span>
             <div className="stat-info">
               <h3>Products</h3>
-              <p className="stat-value">0</p>
+              <p className="stat-value">{loading ? '...' : stats.productCount}</p>
             </div>
           </div>
           <div className="stat-card">
             <span className="stat-icon">👥</span>
             <div className="stat-info">
               <h3>Customers</h3>
-              <p className="stat-value">0</p>
+              <p className="stat-value">{loading ? '...' : stats.customerCount}</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <span className="stat-icon">📋</span>
+            <div className="stat-info">
+              <h3>Orders</h3>
+              <p className="stat-value">{loading ? '...' : stats.orderCount}</p>
             </div>
           </div>
         </div>

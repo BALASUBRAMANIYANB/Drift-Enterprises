@@ -22,8 +22,13 @@ export default function Header() {
 		<header className="amazon-header">
 			<div className="amazon-header-top">
 				<Link to="/" className="amazon-logo">
-					<img src="/assets/logo.png" alt="DRIFT ENTERPRISES Logo" style={{ height: '45px' }} />
-					DRIFT<span> ENTERPRISES</span>
+					<div className="logo-content">
+						<img src="/assets/logo.png" alt="DRIFT ENTERPRISES Logo" style={{ height: '45px' }} />
+						<div className="logo-text">
+							<div className="logo-main">DRIFT</div>
+							<div className="logo-sub">ENTERPRISES</div>
+						</div>
+					</div>
 				</Link>
 				<form className="amazon-search" onSubmit={(e)=>e.preventDefault()}>
 					<select className="amazon-search-category" defaultValue="all">
@@ -34,45 +39,51 @@ export default function Header() {
 						<option value="tv">TV</option>
 					</select>
 					<input className="amazon-search-input" placeholder="Search for products, brands and more..." />
-					<button type="submit" className="amazon-search-button">🔍 Search</button>
+					<button type="submit" className="amazon-search-button">🔍</button>
 				</form>
 				<nav className="amazon-header-links">
 					{userIsAdmin && (
-						<Link to="/admin/products" className="amazon-header-link">
-							<span className="small">Manage</span>
-							<span className="bold">Products</span>
+						<Link to="/admin/products" className="amazon-header-link admin-link">
+							<span className="icon">⚙️</span>
+							<span className="text">Admin</span>
 						</Link>
 					)}
 					{userIsAuthenticated ? (
 						<>
 							<Link to="/account" className="amazon-header-link">
-								<span className="small">Hello, {user?.username}</span>
-								<span className="bold">Account &amp; Lists</span>
+								<span className="icon">👤</span>
+								<span className="text">{user?.username || "Account"}</span>
 							</Link>
 							<button 
 								onClick={handleLogout} 
-								className="amazon-header-link" 
+								className="amazon-header-link logout-btn" 
 								style={{ 
 									background: "none", 
 									border: "none", 
 									cursor: "pointer",
 									color: "inherit",
 									font: "inherit",
-									padding: "0.5rem 1rem"
+									padding: "0"
 								}}
 							>
-								<span className="small">Sign Out</span>
-								<span className="bold">🚪 Logout</span>
+								<span className="icon">🚪</span>
+								<span className="text">Logout</span>
 							</button>
 						</>
 					) : (
 						<Link to="/login" className="amazon-header-link">
-							<span className="small">Hello, Sign in</span>
-							<span className="bold">Account &amp; Lists</span>
+							<span className="icon">🔐</span>
+							<span className="text">Sign In</span>
 						</Link>
 					)}
-					<Link to="/orders" className="amazon-header-link"><span className="small">Returns</span><span className="bold">&amp; Orders</span></Link>
-					<Link to="/cart" className="amazon-header-cart"><span className="cart-count">{totalItems}</span><span className="bold">🛒 Cart</span></Link>
+					<Link to="/orders" className="amazon-header-link">
+						<span className="icon">📦</span>
+						<span className="text">Orders</span>
+					</Link>
+					<Link to="/cart" className="amazon-header-cart">
+						<span className="cart-icon">🛒</span>
+						<span className="cart-count">{totalItems}</span>
+					</Link>
 				</nav>
 			</div>
 			<div className="amazon-header-bottom">

@@ -60,19 +60,24 @@ export function CartProvider({ children }) {
 
   const placeOrder = () => {
     if (items.length === 0) return;
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const newOrder = { id: `ORD-${Date.now()}`, createdAt: new Date().toISOString(), total, items };
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const tax = subtotal * 0.18;
+    const total = subtotal + tax;
+    const newOrder = { id: `ORD-${Date.now()}`, createdAt: new Date().toISOString(), total, subtotal, tax, items, status: 'pending', shippingAddress: null };
     setOrders((current) => [newOrder, ...current]);
     setItems([]);
+    return newOrder;
   };
 
-  const { totalItems, subtotal } = useMemo(() => {
+  const { totalItems, subtotal, tax, total } = useMemo(() => {
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    return { totalItems, subtotal };
+    const tax = subtotal * 0.18; // 18% GST
+    const total = subtotal + tax;
+    return { totalItems, subtotal, tax, total };
   }, [items]);
 
-  const value = { items, orders, addItem, removeItem, updateQuantity, clearCart, placeOrder, totalItems, subtotal };
+  const value = { items, orders, addItem, removeItem, updateQuantity, clearCart, placeOrder, totalItems, subtotal, tax, total };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
@@ -82,3 +87,15 @@ export function useCart() {
   if (!ctx) throw new Error("useCart must be used within a CartProvider");
   return ctx;
 }
+
+export const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+export const validatePhone = (phone) => /^[0-9]{10}$/.test(phone.replace(/[\D]/g, ''));
+export const validatePincode = (pincode) => /^[0-9]{6}$/.test(pincode.replace(/[\D]/g, ''));
+export const validateForm = (formData, requiredFields) => {
+  for (const field of requiredFields) {
+    if (!formData[field] || formData[field].toString().trim() === '') {
+      return { valid: false, error: `${field} is required` };
+    }
+  }
+  return { valid: true, error: null };
+};

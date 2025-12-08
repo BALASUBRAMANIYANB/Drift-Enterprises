@@ -31,6 +31,11 @@ export default function Products() {
 	const category = searchParams.get('category');
 	const sub = searchParams.get('sub');
 
+	const handleSearch = (e) => {
+		e.preventDefault();
+		setSearchParams({ search: searchTerm, ...(category && { category }), ...(sub && { sub }) });
+	};
+
 	let filteredProducts = products;
 	if (category) {
 		filteredProducts = filteredProducts.filter(p => p.category.toLowerCase() === category.toLowerCase());
@@ -41,9 +46,16 @@ export default function Products() {
 			(p.brand && p.brand.toLowerCase() === sub.toLowerCase())
 		);
 	}
+	if (searchTerm) {
+		filteredProducts = filteredProducts.filter(p => 
+			p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			p.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+		);
+	}
 
 	const formatTitle = (str) => str.charAt(0).toUpperCase() + str.slice(1).replace(/-/g, ' ');
-	const title = category ? (sub ? `${formatTitle(sub)} - ${formatTitle(category)}` : formatTitle(category)) : "All Products";
+	const title = searchTerm ? `Search: ${searchTerm}` : (category ? (sub ? `${formatTitle(sub)} - ${formatTitle(category)}` : formatTitle(category)) : "All Products");
 
 	if (loading) {
 		return (
@@ -57,13 +69,27 @@ export default function Products() {
 
 	return (
 		<div className="amazon-grid-section">
+			<div style={{ marginBottom: '2rem' }}>
+				<form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
+					<input
+						type="text"
+						value={searchTerm}
+						onChange={(e) => setSearchTerm(e.target.value)}
+						placeholder="🔍 Search products by name, brand..."
+						style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
+					/>
+					<button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#e71d36', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+						Search
+					</button>
+				</form>
+			</div>
 			<h1 style={{ padding: "0 0.5rem", fontSize: "2.5rem", fontWeight: "900", color: "#1a1a1a", letterSpacing: "-1px", marginBottom: "2rem" }}>
 				{title}
 			</h1>
 			{filteredProducts.length === 0 ? (
 				<div className="empty-state">
 					<p style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>No products found</p>
-					<p style={{ fontSize: "1rem", color: "#666", marginBottom: "2rem" }}>Try browsing other categories</p>
+					<p style={{ fontSize: "1rem", color: "#666", marginBottom: "2rem" }}>Try searching with different keywords or browse categories</p>
 					<Link to="/products" className="primary-button" style={{ display: "inline-block", padding: "1rem 2rem" }}>
 						View All Products
 					</Link>

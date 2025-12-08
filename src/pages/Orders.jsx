@@ -1,9 +1,69 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { ref as dbRef, get, update } from "firebase/database";
+import { database } from "../config/firebase";
+import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../components/CartProvider";
 
 export default function Orders() {
-  const { orders } = useCart();
+  const { user } = useAuth();
+  const { orders: localOrders } = useCart();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadOrders();
+  }, [user]);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      if (user) {
+        const ordersRef = dbRef(database, 'orders');
+        const snapshot = await get(ordersRef);
+        if (snapshot.exists()) {
+          const allOrders = snapshot.val();
+          const userOrders = Object.entries(allOrders)
+            .filter(([_, order]) => order.userId === user.uid)
+            .map(([id, order]) => ({ id, ...order }))
+            .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
+          setOrders(userOrders);
+        } else {
+          setOrders(localOrders || []);
+        }
+      } else {
+        setOrders(localOrders || []);
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      setOrders(localOrders || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelOrder = async (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order?.status !== 'pending') {
+      alert('❌ Can only cancel pending orders');
+      return;
+    }
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    
+    try {
+      const orderRef = dbRef(database, `orders/${orderId}`);
+      await update(orderRef, { status: 'cancelled', cancelledAt: new Date().toISOString() });
+      alert('✅ Order cancelled successfully!');
+      loadOrders();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('❌ Failed to cancel order');
+    }
+  };
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: '4rem 2rem' }}><p style={{ fontSize: '1.5rem' }}>⏳ Loading orders...</p></div>;
+  }
 
   return (
     <div className="page-shell" style={{ maxWidth: "1200px" }}>
@@ -36,13 +96,13 @@ export default function Orders() {
                   boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)"
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-                  <div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem", alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: "1.2rem", color: "#1a1a1a", marginBottom: "0.5rem" }}>
-                      Order #{order.id}
+                      Order #{order.id.substring(0, 8)}
                     </h3>
-                    <p style={{ color: "#666", fontSize: "0.9rem" }}>
-                      Placed on {new Date(order.createdAt).toLocaleDateString('en-US', { 
+                    <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: '0.5rem' }}>
+                      Placed on {new Date(order.createdAt || order.placedAt).toLocaleDateString('en-US', { 
                         year: 'numeric', 
                         month: 'long', 
                         day: 'numeric',
@@ -50,21 +110,42 @@ export default function Orders() {
                         minute: '2-digit'
                       })}
                     </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#666' }}>Status: </span>
+                      <span style={{ 
+                        padding: '0.25rem 0.75rem', 
+                        background: order.status === 'delivered' ? '#28a745' : order.status === 'cancelled' ? '#dc3545' : order.status === 'shipped' ? '#007bff' : '#ffc107',
+                        color: 'white',
+                        borderRadius: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: '600'
+                      }}>
+                        {order.status?.toUpperCase() || 'PENDING'}
+                      </span>
+                    </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "0.25rem" }}>Order Total</p>
-                    <p style={{ fontSize: "1.8rem", fontWeight: "800", color: "#e71d36" }}>
-                      ₹{order.total.toFixed(2)}
+                    <p style={{ fontSize: "1.8rem", fontWeight: "800", color: "#e71d36", marginBottom: '1rem' }}>
+                      ₹{(order.total || order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0).toFixed(2)}
                     </p>
+                    {order.status === 'pending' && (
+                      <button 
+                        onClick={() => cancelOrder(order.id)}
+                        style={{ padding: '0.5rem 1rem', background: '#dc3545', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}
+                      >
+                        ❌ Cancel Order
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 <div style={{ borderTop: "1px solid #e8e8e8", paddingTop: "1.5rem" }}>
-                  <h4 style={{ fontSize: "1rem", marginBottom: "1rem", color: "#1a1a1a" }}>Items:</h4>
+                  <h4 style={{ fontSize: "1rem", marginBottom: "1rem", color: "#1a1a1a" }}>Items ({order.items?.length || 0}):</h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    {order.items.map((item) => (
+                    {(order.items || []).map((item, idx) => (
                       <div 
-                        key={item.id} 
+                        key={idx} 
                         style={{ 
                           display: "flex", 
                           justifyContent: "space-between", 
@@ -75,55 +156,34 @@ export default function Orders() {
                           border: "1px solid #f0f0f0"
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                          <img 
+                        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flex: 1 }}>
+                          {item.image && <img 
                             src={item.image} 
-                            alt={item.title} 
-                            style={{ 
-                              width: "60px", 
-                              height: "60px", 
-                              objectFit: "contain",
-                              borderRadius: "8px",
-                              background: "#fafafa"
-                            }} 
-                          />
+                            alt={item.title}
+                            style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "8px" }}
+                          />}
                           <div>
-                            <p style={{ fontWeight: "600", color: "#1a1a1a", marginBottom: "0.25rem" }}>
-                              {item.title}
-                            </p>
-                            <p style={{ color: "#666", fontSize: "0.85rem" }}>
-                              Quantity: {item.quantity}
-                            </p>
+                            <p style={{ fontWeight: "600", marginBottom: "0.25rem" }}>{item.title || 'Product'}</p>
+                            <p style={{ color: "#999", fontSize: "0.85rem" }}>Qty: {item.quantity}</p>
                           </div>
                         </div>
-                        <p style={{ fontWeight: "700", color: "#e71d36", fontSize: "1.1rem" }}>
-                          ₹{(item.price * item.quantity).toFixed(2)}
-                        </p>
+                        <p style={{ fontWeight: "600", minWidth: "80px", textAlign: "right" }}>₹{(item.price * item.quantity).toFixed(2)}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid #e8e8e8" }}>
-                  <div style={{ 
-                    background: "linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)",
-                    padding: "1rem 1.5rem",
-                    borderRadius: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem"
-                  }}>
-                    <span style={{ fontSize: "1.5rem" }}>✅</span>
-                    <div>
-                      <p style={{ fontWeight: "700", color: "#2e7d32", marginBottom: "0.25rem" }}>
-                        Order Confirmed
-                      </p>
-                      <p style={{ fontSize: "0.85rem", color: "#388e3c" }}>
-                        Your order has been placed successfully (Demo Mode)
-                      </p>
-                    </div>
+                {order.shippingAddress && (
+                  <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#f5f5f5", borderRadius: "12px" }}>
+                    <p style={{ fontSize: "0.9rem", fontWeight: "600", marginBottom: "0.5rem" }}>📍 Shipping Address:</p>
+                    <p style={{ color: "#666", fontSize: "0.9rem", lineHeight: "1.6" }}>
+                      {order.shippingAddress.name}<br/>
+                      {order.shippingAddress.address}<br/>
+                      {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}<br/>
+                      <strong>Phone:</strong> {order.shippingAddress.phone}
+                    </p>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

@@ -4,6 +4,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./components/CartProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/AdminLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
@@ -31,9 +32,10 @@ import "./index.css";
 
 export default function App() {
 	return (
-		<AuthProvider>
-			<CartProvider>
-				<Header />
+		<ErrorBoundary>
+			<AuthProvider>
+				<CartProvider>
+					<Header />
 				<main className="amazon-main">
 					<Routes>
 						{/* Public Routes */}
@@ -139,7 +141,8 @@ export default function App() {
 					<div className="footer-copyright">© 2024 Drift Enterprises - All Rights Reserved | Crafted with ❤️</div>
 				</div>
 			</footer>
-			</CartProvider>
-		</AuthProvider>
+				</CartProvider>
+			</AuthProvider>
+		</ErrorBoundary>
 	);
 }
