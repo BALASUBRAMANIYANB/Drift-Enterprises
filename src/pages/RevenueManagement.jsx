@@ -10,6 +10,13 @@ const RevenueManagement = () => {
 
   useEffect(() => {
     loadOrders();
+    
+    // Auto-refresh every 30 seconds for live data (FREE solution)
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadOrders = async () => {

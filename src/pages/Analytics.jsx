@@ -10,6 +10,7 @@ const Analytics = () => {
   const [users, setUsers] = useState([]);
   const [timeFilter, setTimeFilter] = useState('month'); // week, month, year
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -20,11 +21,20 @@ const Analytics = () => {
 
   useEffect(() => {
     loadData();
+    
+    // Auto-refresh every 30 seconds for live data (FREE solution)
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      setLastUpdated(new Date()); // Update timestamp
+      
       // Load products
       const productsData = await productService.getAllProducts();
       setProducts(productsData);
@@ -89,6 +99,27 @@ const Analytics = () => {
         <div>
           <h1>📈 Analytics Dashboard</h1>
           <p>Comprehensive insights into sales, products, and customer behavior</p>
+          <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '0.85rem', color: '#666', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              🔄 Auto-refreshes every 30s • Last updated: {lastUpdated.toLocaleTimeString()}
+            </span>
+            <button 
+              onClick={() => loadData()} 
+              disabled={loading}
+              style={{ 
+                padding: '0.4rem 1rem', 
+                background: loading ? '#ccc' : '#e71d36', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '6px', 
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: '500'
+              }}
+            >
+              {loading ? '⏳ Refreshing...' : '🔄 Refresh Now'}
+            </button>
+          </div>
         </div>
         <select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)} className="time-filter">
           <option value="week">Last 7 Days</option>
@@ -142,34 +173,59 @@ const Analytics = () => {
           <h3>📊 Sales Overview (Last 7 Days)</h3>
           <div style={{ padding: '2rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                const value = Math.floor(Math.random() * 50000) + 10000;
-                const maxValue = 60000;
-                const percentage = (value / maxValue) * 100;
-                return (
-                  <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span style={{ minWidth: '40px', fontWeight: '500' }}>{day}</span>
-                    <div style={{ flex: 1, background: '#f0f0f0', borderRadius: '8px', height: '32px', position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ 
-                        width: `${percentage}%`, 
-                        height: '100%', 
-                        background: `linear-gradient(90deg, #e71d36 0%, #ff6b6b ${percentage}%)`,
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        paddingRight: '0.5rem',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        transition: 'width 0.5s ease'
-                      }}>
-                        {percentage > 15 && `₹${(value / 1000).toFixed(0)}k`}
+              {(() => {
+                // Calculate daily sales from real orders
+                const today = new Date();
+                const dailySales = [];
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                
+                for (let i = 6; i >= 0; i--) {
+                  const date = new Date(today);
+                  date.setDate(today.getDate() - i);
+                  const dayName = days[date.getDay()];
+                  
+                  // Calculate sales for this day
+                  const daySales = orders.filter(order => {
+                    if (!order.createdAt) return false;
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate.toDateString() === date.toDateString();
+                  }).reduce((sum, order) => sum + (order.total || 0), 0);
+                  
+                  dailySales.push({ day: dayName, value: daySales });
+                }
+                
+                const maxValue = Math.max(...dailySales.map(d => d.value), 1000);
+                
+                return dailySales.map(({ day, value }) => {
+                  const percentage = (value / maxValue) * 100;
+                  return (
+                    <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span style={{ minWidth: '40px', fontWeight: '500' }}>{day}</span>
+                      <div style={{ flex: 1, background: '#f0f0f0', borderRadius: '8px', height: '32px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ 
+                          width: `${percentage}%`, 
+                          height: '100%', 
+                          background: `linear-gradient(90deg, #e71d36 0%, #ff6b6b ${percentage}%)`,
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          paddingRight: '0.5rem',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.85rem',
+                          transition: 'width 0.5s ease'
+                        }}>
+                          {percentage > 15 && value > 0 && `₹${value >= 1000 ? (value / 1000).toFixed(1) + 'k' : value}`}
+                        </div>
                       </div>
+                      <span style={{ minWidth: '80px', fontSize: '0.9rem', color: '#666' }}>
+                        ₹{value.toLocaleString('en-IN')}
+                      </span>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>

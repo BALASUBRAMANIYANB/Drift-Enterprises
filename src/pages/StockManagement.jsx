@@ -39,15 +39,21 @@ const StockManagement = () => {
   };
 
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         false;
+    // Handle both 'name' and 'title' fields (Firebase products use 'title')
+    const productName = product.name || product.title || '';
+    const productSku = product.sku || product.id || '';
+    const productBrand = product.brand || '';
+    
+    const matchesSearch = productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         productSku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         productBrand.toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesFilter = true;
+    const stockLevel = product.stock || 0;
     if (filterBy === 'low-stock') {
-      matchesFilter = product.stock > 0 && product.stock <= 10;
+      matchesFilter = stockLevel > 0 && stockLevel <= 10;
     } else if (filterBy === 'out-of-stock') {
-      matchesFilter = product.stock === 0;
+      matchesFilter = stockLevel === 0;
     }
 
     return matchesSearch && matchesFilter;
@@ -174,8 +180,8 @@ const StockManagement = () => {
                         className="product-thumb"
                       />
                     </td>
-                    <td className="product-name">{product.name}</td>
-                    <td>{product.sku || 'N/A'}</td>
+                    <td className="product-name">{product.name || product.title || 'Unnamed Product'}</td>
+                    <td>{product.sku || product.id || 'N/A'}</td>
                     <td>
                       <input
                         type="number"

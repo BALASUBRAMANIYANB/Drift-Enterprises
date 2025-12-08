@@ -11,6 +11,13 @@ const CustomerManagement = () => {
 
   useEffect(() => {
     loadCustomers();
+    
+    // Auto-refresh every 30 seconds for live data (FREE solution)
+    const interval = setInterval(() => {
+      loadCustomers();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadCustomers = async () => {

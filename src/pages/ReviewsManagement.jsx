@@ -13,6 +13,13 @@ const ReviewsManagement = () => {
 
   useEffect(() => {
     loadData();
+    
+    // Auto-refresh every 30 seconds for live data (FREE solution)
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {

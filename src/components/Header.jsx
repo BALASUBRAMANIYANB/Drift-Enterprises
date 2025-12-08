@@ -76,10 +76,17 @@ export default function Header() {
 							<span className="text">Sign In</span>
 						</Link>
 					)}
-					<Link to="/orders" className="amazon-header-link">
-						<span className="icon">📦</span>
-						<span className="text">Orders</span>
-					</Link>
+					{userIsAdmin ? (
+						<Link to="/admin/orders" className="amazon-header-link">
+							<span className="icon">📦</span>
+							<span className="text">Orders</span>
+						</Link>
+					) : (
+						<Link to="/orders" className="amazon-header-link">
+							<span className="icon">📦</span>
+							<span className="text">Orders</span>
+						</Link>
+					)}
 					<Link to="/cart" className="amazon-header-cart">
 						<span className="cart-icon">🛒</span>
 						<span className="cart-count">{totalItems}</span>

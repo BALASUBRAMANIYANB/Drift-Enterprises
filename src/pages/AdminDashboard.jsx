@@ -12,6 +12,13 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadDashboardStats();
+    
+    // Auto-refresh every 30 seconds for live data (FREE solution)
+    const interval = setInterval(() => {
+      loadDashboardStats();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardStats = async () => {

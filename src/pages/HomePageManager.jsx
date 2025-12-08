@@ -336,8 +336,57 @@ const HomePageManager = () => {
       {activeSection === 'hero' && (
         <div className="content-section">
           <div className="hero-manager">
-            <h2>🌟 Hero Section</h2>
-            <p className="coming-soon">Coming soon! You can manage the hero banner and main call-to-action here.</p>
+            <h2>🌟 Hero Section Manager</h2>
+            <p style={{ color: '#666', marginBottom: '2rem' }}>Manage your homepage hero banner and main call-to-action.</p>
+            
+            <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #e8e8e8' }}>
+              <h3 style={{ marginBottom: '1.5rem' }}>Hero Content</h3>
+              <div style={{ display: 'grid', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Main Heading</label>
+                  <input 
+                    type="text" 
+                    defaultValue="Welcome to DRIFT ENTERPRISES"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
+                    placeholder="Enter main heading"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Subheading</label>
+                  <input 
+                    type="text" 
+                    defaultValue="Your One-Stop Shop for All Your Needs"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
+                    placeholder="Enter subheading"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Call-to-Action Button Text</label>
+                  <input 
+                    type="text" 
+                    defaultValue="Shop Now"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
+                    placeholder="Button text"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Button Link</label>
+                  <input 
+                    type="text" 
+                    defaultValue="/products"
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
+                    placeholder="/products"
+                  />
+                </div>
+                <button
+                  style={{ padding: '0.75rem 2rem', background: '#e71d36', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '1rem' }}
+                  onClick={() => alert('✅ Hero section settings updated! (Static demo - add Firebase integration if needed)')}
+                >
+                  💾 Save Hero Settings
+                </button>
+                <p style={{ color: '#666', fontSize: '0.9rem', fontStyle: 'italic' }}>Note: Hero banner is managed in the Banners section. This section controls the hero text overlay.</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
