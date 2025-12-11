@@ -10,6 +10,7 @@ export default function ProductManagement() {
 	const [selectedSubcategory, setSelectedSubcategory] = useState('refrigerator');
 	const [formData, setFormData] = useState({
 		title: '',
+		mrp: '',
 		price: '',
 		rating: '',
 		description: '',
@@ -173,6 +174,7 @@ export default function ProductManagement() {
 				category: selectedCategory,
 				subcategory: selectedSubcategory,
 				title: formData.title,
+				mrp: formData.mrp ? parseFloat(formData.mrp) : null,
 				price: parseFloat(formData.price),
 				rating: parseFloat(formData.rating) || 0,
 				description: formData.description,
@@ -192,6 +194,7 @@ export default function ProductManagement() {
 			// Reset form
 			setFormData({
 				title: '',
+				mrp: '',
 				price: '',
 				rating: '',
 				description: '',
@@ -542,23 +545,44 @@ export default function ProductManagement() {
 								/>
 							</div>
 
-							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
 								<div>
 									<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
-										Price (₹) *
+										MRP (₹)
 									</label>
-									<input 
+									<input
+										type="number"
+										name="mrp"
+										value={formData.mrp}
+										onChange={handleInputChange}
+										placeholder="0.00"
+										step="0.01"
+										style={{
+											width: '100%',
+											padding: '0.75rem',
+											border: '2px solid #1a1a1a',
+											borderRadius: '8px',
+											fontSize: '1rem',
+											fontWeight: '600'
+										}}
+									/>
+								</div>
+								<div>
+									<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
+										Discounted Price (₹) *
+									</label>
+									<input
 										type="number"
 										name="price"
 										value={formData.price}
 										onChange={handleInputChange}
 										placeholder="0.00"
 										step="0.01"
-										style={{ 
-											width: '100%', 
-											padding: '0.75rem', 
-											border: '2px solid #1a1a1a', 
-											borderRadius: '8px', 
+										style={{
+											width: '100%',
+											padding: '0.75rem',
+											border: '2px solid #1a1a1a',
+											borderRadius: '8px',
 											fontSize: '1rem',
 											fontWeight: '600'
 										}}
@@ -568,7 +592,7 @@ export default function ProductManagement() {
 									<label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '700', color: '#1a1a1a' }}>
 										Rating (0-5)
 									</label>
-									<input 
+									<input
 										type="number"
 										name="rating"
 										value={formData.rating}
@@ -577,11 +601,11 @@ export default function ProductManagement() {
 										min="0"
 										max="5"
 										step="0.1"
-										style={{ 
-											width: '100%', 
-											padding: '0.75rem', 
-											border: '2px solid #1a1a1a', 
-											borderRadius: '8px', 
+										style={{
+											width: '100%',
+											padding: '0.75rem',
+											border: '2px solid #1a1a1a',
+											borderRadius: '8px',
 											fontSize: '1rem',
 											fontWeight: '600'
 										}}
@@ -822,6 +846,7 @@ export default function ProductManagement() {
 									{formData.title || 'Product Name'}
 								</h3>
 								<p style={{ margin: '0.5rem 0', color: '#e71d36', fontSize: '1.8rem', fontWeight: '900' }}>
+									{formData.mrp && <span style={{ textDecoration: 'line-through', color: '#888', marginRight: '10px' }}>MRP ₹{formData.mrp}</span>}
 									₹{formData.price || '0.00'}
 								</p>
 								<p style={{ margin: '0.5rem 0', color: '#e71d36', fontSize: '1.1rem', fontWeight: '700' }}>

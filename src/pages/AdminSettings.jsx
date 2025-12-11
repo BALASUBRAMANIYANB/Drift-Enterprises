@@ -19,7 +19,7 @@ const AdminSettings = () => {
 
   // Site settings
   const [siteSettings, setSiteSettings] = useState({
-    siteName: 'DRIFT ENTERPRISES',
+    siteName: 'DRIFT ENERPRISES',
     tagline: 'Your One-Stop Shop',
     email: 'contact@drift.com',
     phone: '+91 1234567890',

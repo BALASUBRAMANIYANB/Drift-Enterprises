@@ -42,6 +42,50 @@ export default function Checkout() {
     }
   };
 
+  const saveAddress = async (addressData) => {
+    try {
+      const userRef = dbRef(database, `users/${user.uid}`);
+      const snapshot = await get(userRef);
+      let userData = {};
+
+      if (snapshot.exists()) {
+        userData = snapshot.val();
+      }
+
+      // Initialize addresses array if it doesn't exist
+      if (!userData.addresses) {
+        userData.addresses = [];
+      }
+
+      // Check if this address already exists
+      const existingAddressIndex = userData.addresses.findIndex(addr =>
+        addr.firstName === addressData.firstName &&
+        addr.lastName === addressData.lastName &&
+        addr.address === addressData.address &&
+        addr.city === addressData.city &&
+        addr.state === addressData.state &&
+        addr.pincode === addressData.pincode &&
+        addr.phone === addressData.phone
+      );
+
+      if (existingAddressIndex === -1) {
+        // Add new address with an ID
+        const newAddress = {
+          id: Date.now(), // Simple ID generation
+          name: `${addressData.firstName} ${addressData.lastName}`,
+          ...addressData
+        };
+        userData.addresses.push(newAddress);
+      }
+
+      // Save updated user data
+      await set(userRef, userData);
+    } catch (error) {
+      console.error('Error saving address:', error);
+      // Don't throw error here as it's not critical for order placement
+    }
+  };
+
   const deductStock = async () => {
     try {
       for (const item of items) {
@@ -106,10 +150,15 @@ export default function Checkout() {
           paymentMethod,
           placedAt: new Date().toISOString()
         });
-        
+
+        // Save address to user profile if it's a new address (not from saved addresses)
+        if (!selectedAddress && user) {
+          await saveAddress(finalAddress);
+        }
+
         // Deduct stock after order is saved
         await deductStock();
-        
+
         alert(`✅ Order placed successfully!\n\nOrder ID: ${order.id}\nTotal: ₹${total.toFixed(2)}\n\nThank you for shopping!`);
         navigate("/orders");
       }

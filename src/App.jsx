@@ -137,8 +137,8 @@ export default function App() {
 					</div>
 				</div>
 				<div className="amazon-footer-bottom">
-					<div className="footer-logo">⚡ DRIFT ENTERPRISES</div>
-					<div className="footer-copyright">© 2024 Drift Enterprises - All Rights Reserved | Crafted with ❤️</div>
+					<div className="footer-logo">⚡ DRIFT ENERPRISES</div>
+					<div className="footer-copyright">© 2024 Drift Enerprises - All Rights Reserved | Crafted with ❤️</div>
 				</div>
 			</footer>
 				</CartProvider>

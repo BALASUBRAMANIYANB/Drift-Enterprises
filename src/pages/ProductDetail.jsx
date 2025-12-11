@@ -172,7 +172,7 @@ export default function ProductDetail() {
 						<span className="currency">₹</span>
 						{product.price.toFixed(2)}
 					</p>
-					<p className="text-muted">FREE delivery with DRIFT ENTERPRISES Prime. This is a demo experience.</p>
+					<p className="text-muted">FREE delivery with DRIFT ENERPRISES Prime. This is a demo experience.</p>
 					<button className="primary-button wide" onClick={handleAddToCart} style={{ width: "100%" }}>
 						🛒 Add to Cart
 					</button>

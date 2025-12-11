@@ -1,8 +1,8 @@
-# 🚀 DRIFT ENTERPRISES
+# 🚀 DRIFT ENERPRISES
 
 A modern, fully responsive e-commerce platform built with React and Firebase, offering a seamless shopping experience across all devices.
 
-![DRIFT ENTERPRISES](https://img.shields.io/badge/Status-Active-success)
+![DRIFT ENERPRISES](https://img.shields.io/badge/Status-Active-success)
 ![React](https://img.shields.io/badge/React-18-blue)
 ![Firebase](https://img.shields.io/badge/Firebase-Realtime%20DB-orange)
 ![Responsive](https://img.shields.io/badge/Design-Fully%20Responsive-green)

@@ -345,8 +345,8 @@ const HomePageManager = () => {
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Main Heading</label>
                   <input 
-                    type="text" 
-                    defaultValue="Welcome to DRIFT ENTERPRISES"
+                    type="text"
+                    defaultValue="Welcome to DRIFT ENERPRISES"
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
                     placeholder="Enter main heading"
                   />

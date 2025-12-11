@@ -43,7 +43,7 @@ export default function Home() {
       <div className="amazon-hero">
         <div className="amazon-hero-banner">
           <div className="amazon-hero-text">
-            <h1>Discover Premium Electronics at DRIFT ENTERPRISES</h1>
+            <h1>Discover Premium Electronics at DRIFT ENERPRISES</h1>
             <p>Fast delivery, curated products, and unbeatable deals on the latest tech.</p>
             <Link to="/products" className="amazon-hero-button">🛍️ Shop Now</Link>
           </div>

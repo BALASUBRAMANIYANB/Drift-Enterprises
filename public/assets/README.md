@@ -1,4 +1,4 @@
-# Assets structure for DRIFT ENTERPRISES
+# Assets structure for DRIFT ENERPRISES
 
 Place your product and category images inside these folders.  
 You can overwrite or delete the `.gitkeep` files – they only exist so the folders are tracked.
