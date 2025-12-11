@@ -3,7 +3,9 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider
 } from "firebase/auth";
 import { ref as dbRef, get, set } from "firebase/database";
 import { auth, database } from "../config/firebase";
@@ -117,6 +119,34 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      
+      // Check if user exists in database
+      const userRef = dbRef(database, `users/${firebaseUser.uid}`);
+      const snapshot = await get(userRef);
+      
+      if (!snapshot.exists()) {
+        // Create user document if it doesn't exist
+        await set(userRef, {
+          email: firebaseUser.email,
+          username: firebaseUser.email.split('@')[0],
+          fullName: firebaseUser.displayName || "User",
+          role: "customer",
+          createdAt: Date.now()
+        });
+      }
+      // User state will be updated by onAuthStateChanged
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -145,6 +175,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    loginWithGoogle,
     logout,
     isAuthenticated,
     isAdmin,

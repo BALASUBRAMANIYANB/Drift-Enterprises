@@ -11,7 +11,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -95,6 +95,29 @@ export default function Login() {
     setPassword("");
     setConfirmPassword("");
     setFullName("");
+  };
+
+  const handleGoogleSignIn = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      await loginWithGoogle();
+      navigate(from, { replace: true });
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in was cancelled.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Popup was blocked. Please check your browser settings.');
+      } else {
+        setError(err.message || 'Failed to sign in with Google. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -304,6 +327,43 @@ export default function Login() {
           }}
         >
           {loading ? (isSignUp ? "Creating Account..." : "Signing in...") : (isSignUp ? "🎉 Create Account" : "🚀 Sign In")}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "0.875rem",
+            backgroundColor: "white",
+            color: "#1f2937",
+            border: "2px solid #e8e8e8",
+            borderRadius: "12px",
+            fontSize: "0.95rem",
+            fontWeight: "600",
+            cursor: loading ? "not-allowed" : "pointer",
+            transition: "all 0.3s ease",
+            opacity: loading ? 0.6 : 1,
+            marginBottom: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem"
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) {
+              e.target.style.backgroundColor = "#f5f5f5";
+              e.target.style.borderColor = "#e71d36";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = "white";
+            e.target.style.borderColor = "#e8e8e8";
+          }}
+        >
+          <span>🔐</span>
+          {loading ? "Signing in..." : "Continue with Google"}
         </button>
 
         <div style={{ 
