@@ -85,7 +85,7 @@ const CustomerManagement = () => {
       </div>
 
       {/* Stats */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '2rem' }}>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '2rem' }}>
         <div className="stat-card">
           <span className="stat-icon">👥</span>
           <div className="stat-info">
@@ -105,6 +105,13 @@ const CustomerManagement = () => {
           <div className="stat-info">
             <h3>Customers</h3>
             <p className="stat-value">{stats.customers}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon">📍</span>
+          <div className="stat-info">
+            <h3>Total Addresses</h3>
+            <p className="stat-value">{customers.reduce((sum, c) => sum + (c.addresses?.length || 0), 0)}</p>
           </div>
         </div>
       </div>
@@ -127,75 +134,159 @@ const CustomerManagement = () => {
 
       {/* Customer List */}
       <div className="orders-table-container">
-        <table className="orders-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Joined</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCustomers.length === 0 ? (
-              <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
-                  No customers found
-                </td>
-              </tr>
-            ) : (
-              filteredCustomers.map((customer) => (
-                <tr key={customer.uid}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ 
-                        width: '40px', 
-                        height: '40px', 
-                        borderRadius: '50%', 
-                        background: 'linear-gradient(135deg, #e71d36, #ff6b6b)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: '1.2rem'
-                      }}>
-                        {(customer.fullName || customer.username || 'U')[0].toUpperCase()}
-                      </div>
-                      <strong>{customer.fullName || customer.username || 'Unknown'}</strong>
-                    </div>
-                  </td>
-                  <td>{customer.email}</td>
-                  <td>{customer.username}</td>
-                  <td>
+        {filteredCustomers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
+            No customers found
+          </div>
+        ) : (
+          filteredCustomers.map((customer) => (
+            <div key={customer.uid} style={{
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e0e0e0',
+              marginBottom: '1.5rem',
+              overflow: 'hidden',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              {/* Customer Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                padding: '1.5rem',
+                borderBottom: '1px solid #e0e0e0'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #e71d36, #ff6b6b)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '1.4rem'
+                  }}>
+                    {(customer.fullName || customer.username || 'U')[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: '0 0 0.25rem 0', color: '#1a1a1a' }}>
+                      {customer.fullName || customer.username || 'Unknown User'}
+                    </h3>
+                    <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>
+                      {customer.email} • Joined {new Date(customer.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <span className={`status-badge ${customer.role === 'admin' ? 'delivered' : 'pending'}`}>
                       {customer.role === 'admin' ? '👨‍💼 Admin' : '🛍️ Customer'}
                     </span>
-                  </td>
-                  <td>{new Date(customer.createdAt).toLocaleDateString()}</td>
-                  <td>
                     <select
                       value={customer.role || 'customer'}
                       onChange={(e) => handleRoleChange(customer.uid, e.target.value)}
                       style={{
-                        padding: '0.5rem',
+                        padding: '0.5rem 1rem',
                         borderRadius: '8px',
                         border: '1px solid #ddd',
                         background: 'white',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
                       }}
                     >
                       <option value="customer">Customer</option>
                       <option value="admin">Admin</option>
                     </select>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Details */}
+              <div style={{ padding: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 0.75rem 0', color: '#1a1a1a', fontSize: '1rem' }}>📧 Contact Information</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div><strong>Email:</strong> {customer.email}</div>
+                      <div><strong>Username:</strong> {customer.username || 'Not set'}</div>
+                      <div><strong>Full Name:</strong> {customer.fullName || 'Not set'}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ margin: '0 0 0.75rem 0', color: '#1a1a1a', fontSize: '1rem' }}>📊 Account Details</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div><strong>User ID:</strong> {customer.uid}</div>
+                      <div><strong>Role:</strong> {customer.role || 'customer'}</div>
+                      <div><strong>Joined:</strong> {new Date(customer.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Saved Addresses */}
+                <div>
+                  <h4 style={{ margin: '0 0 1rem 0', color: '#1a1a1a', fontSize: '1rem' }}>
+                    📍 Saved Addresses ({customer.addresses?.length || 0})
+                  </h4>
+
+                  {customer.addresses && customer.addresses.length > 0 ? (
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                      {customer.addresses.map((address, index) => (
+                        <div key={address.id || index} style={{
+                          background: '#f8f9fa',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          padding: '1rem'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                            <h5 style={{ margin: 0, color: '#1a1a1a' }}>
+                              {address.name || `${address.firstName} ${address.lastName}`}
+                            </h5>
+                            <span style={{
+                              background: '#e71d36',
+                              color: 'white',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '12px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              Address {index + 1}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
+                            <div>
+                              <strong>📧 Email:</strong> {address.email || customer.email}
+                            </div>
+                            <div>
+                              <strong>📞 Phone:</strong> {address.phone}
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                              <strong>🏠 Address:</strong><br />
+                              {address.address}, {address.city}, {address.state} - {address.pincode}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: '#f8f9fa',
+                      border: '2px dashed #e0e0e0',
+                      borderRadius: '8px',
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#999'
+                    }}>
+                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📍</div>
+                      <p>No saved addresses yet</p>
+                      <p style={{ fontSize: '0.9rem' }}>Addresses will appear here after the customer places their first order</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
