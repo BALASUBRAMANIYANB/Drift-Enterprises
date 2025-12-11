@@ -5,6 +5,7 @@ import { productService } from "../services/productService";
 export default function Products() {
 	const [products, setProducts] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [searchTerm, setSearchTerm] = useState("");
 	const [searchParams] = useSearchParams();
 
 	useEffect(() => {
